@@ -1,0 +1,16 @@
+{
+  "name": "palone_bot",
+  "version": "0.0.1",
+  "description": "Discord bot",
+  "main": "palone_bot.js",
+  "scripts": {
+    "start": "node palone_bot.js",
+    "dev": "nodemon palone_bot.js --ext js --trace-warnings"
+  },
+  "author": "koraynilay#5698",
+  "dependencies": {
+    "discord.js": "^13.6.0",
+    "dotenv": "^16.0.0",
+    "nodemon": "^2.0.15"
+  }
+}
