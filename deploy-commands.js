@@ -1,4 +1,5 @@
 require('dotenv').config();
+const endec = require(process.env.cm);
 /* should use:
 import 'dotenv/config' // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
 import express from 'express'
@@ -8,7 +9,8 @@ const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v9');
 const { cId, gId, tok } = process.env;
 const fs = require('node:fs');
-console.log(cId,gId,tok);
+t = endec.decode(tok);
+console.log(cId,gId,t);
 
 const commands = [];
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
@@ -21,14 +23,14 @@ for (const file of commandFiles) {
 	commands.push(command.data.toJSON());
 }
 
-const rest = new REST({ version: '9' }).setToken(tok);
+const rest = new REST({ version: '9' }).setToken(t);
 
 (async () => {
 	try {
 		console.log('Started refreshing application (/) commands.');
-
+		console.log(commands);
 		await rest.put(
-			Routes.applicationGuildCommands(cId),
+			Routes.applicationCommands(cId),
 			{ body: commands },
 		);
 
