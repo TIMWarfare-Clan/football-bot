@@ -13,6 +13,7 @@ const client = new Client({
 });
 
 client.once('ready', async () => {
+try{
 	data_boot = new Date();
 	console.log(`Logged in as ${client.user.id} at ${data_boot}.\n`+
 		    `prefix: ${p}`
@@ -28,11 +29,14 @@ client.once('ready', async () => {
 	  }
 	};
 
-	try{
-		resp = await axios.request(options)
-		console.log(resp.data);
-	}catch(e){console.log(e)}
+	resp = await axios.request(options)
+	//console.log(resp.data);
+	msg = resp.data.data[0].date;
+	console.log(msg);
 
+	//(await client.channels.fetch('958777715610247209')).send("ciao");
+	(await client.channels.fetch('481512731569160224')).send(msg);
+}catch(e){console.log(e)}
 });
 
 client.on('messageCreate', () => {
@@ -48,3 +52,6 @@ client.on('interactionCreate', async interaction => {
 
 tok = endec.decode(process.env.tok);
 client.login(tok);
+
+//https://support.discord.com/hc/en-us/community/posts/1500000729481/comments/1500000693961
+//https://support.discord.com/hc/en-us/community/posts/1500000729481/comments/1500000688302
