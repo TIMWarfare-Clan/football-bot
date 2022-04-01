@@ -4,8 +4,8 @@
   "description": "Discord bot",
   "main": "palone_bot.js",
   "scripts": {
-    "start": "node palone_bot.js",
-    "dev": "nodemon palone_bot.js --ext js --trace-warnings"
+    "start": "node ./football-bot.js",
+    "dev": "nodemon ./football-bot.js --ext js --trace-warnings"
   },
   "author": "koraynilay#5698",
   "dependencies": {
