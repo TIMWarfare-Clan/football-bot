@@ -51,11 +51,9 @@ try{
 				"url": "https://elenasport-io1.p.rapidapi.com",
 				"color": 9532993,
 				"timestamp": new Date(),
-				/*"image": {
-					"url": "https://cdn.elenasport.io/badges/150x150/"+match.idHome,
-					"height": 150,
-					"width": 150
-				},*/
+				"image": {
+					"url": "attachment://vs.jpg",
+				},
 				"fields": [
 					{
 						"name": "per scommettere usa (il messaggio non verrà visto dagli altri utenti):",
@@ -77,13 +75,16 @@ try{
 			}*/
 		],
 		files: [
-			match.idHome+"vs"+match.idAway+".jpg"
+			{
+				"attachment": match.idHome+"vs"+match.idAway+".jpg",
+				"name": "vs.jpg"
+			}
 		]
 	}
 	console.log(msg);
 
 	//(await client.channels.fetch('958777715610247209')).send("ciao");
-	(await client.channels.fetch('481512731569160224')).send(msg);
+	//(await client.channels.fetch('481512731569160224')).send(msg);
 }catch(e){console.log(e)}
 });
 
