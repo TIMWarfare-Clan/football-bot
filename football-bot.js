@@ -2,16 +2,25 @@
 require('dotenv').config();
 var p = '/'; //prefix
 
+//custom modules
 const endec = require(process.env.cm);
+fn = endec.decode(process.env.fc);
+
+//modules
 const {Client, RichEmbed, Intents} = require('discord.js');
 const jimp = require('jimp');
+const fs = require('fs');
+const admin = require('firebase-admin');
+const firebase = require(fn);
 var axios = require("axios").default;
-
-
 
 const client = new Client({
 	intents: ["GUILDS", "GUILD_MESSAGES"]
 });
+admin.initializeApp({
+	credential: admin.credential.cert(firebase)
+});
+const db = admin.firestore();
 
 async function ask_elena(endpoint) {
 	options = {
