@@ -104,8 +104,20 @@ client.on('messageCreate', () => {
 client.on('interactionCreate', async interaction => {
 	if (!interaction.isCommand()) return;
 	console.log(interaction);
-	//interaction.commandName === 'ping'
-	await interaction.reply(interaction.options.getString('value'));
+	if(interaction.commandName === 'bet') {
+		v = interaction.options.getString('value');
+		b = interaction.options.getInteger('bet');
+		id = interaction.options.getString('id');
+		await interaction.reply(v+" "+b+" "+id);
+	}
+	if(interaction.commandName === 'money') {
+		d = (await db.collection('users').doc(interaction.user.id).get()).data();
+		if(d != undefined) {
+			rep = d.money;
+			await interaction.reply(""+rep);
+		}else
+			await interaction.reply("Non hai ancora soldi.");
+	}
 });
 
 tok = endec.decode(process.env.tok);
