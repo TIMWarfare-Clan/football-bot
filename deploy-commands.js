@@ -30,7 +30,8 @@ const rest = new REST({ version: '9' }).setToken(t);
 		console.log('Started refreshing application (/) commands.');
 		console.log(commands);
 		await rest.put(
-			Routes.applicationCommands(cId),
+			//Routes.applicationCommands(cId),
+			Routes.applicationGuildCommands(cId,gId),
 			{ body: commands },
 		);
 
