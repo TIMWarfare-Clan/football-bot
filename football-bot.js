@@ -14,6 +14,9 @@ const admin = require('firebase-admin');
 const firebase = require(fn);
 var axios = require("axios").default;
 
+//global variables
+const currency_name = "Pippo";
+
 const client = new Client({
 	intents: ["GUILDS", "GUILD_MESSAGES"]
 });
@@ -112,10 +115,40 @@ client.on('interactionCreate', async interaction => {
 	if (!interaction.isCommand()) return;
 	console.log(interaction);
 	if(interaction.commandName === 'bet') {
-		v = interaction.options.getString('value');
-		b = interaction.options.getInteger('bet');
-		id = interaction.options.getString('id');
-		await interaction.reply(v+" "+b+" "+id);
+		bb = {
+			"bet_value": interaction.options.getString('value'),
+			"bet_amount": interaction.options.getInteger('bet'),
+			"id_partita": interaction.options.getString('id'),
+			"timestamp": new Date().toISOString()
+		}
+		interaction.reply({
+			content: `Bet registrata:\n`+
+				 `Scommessa: ${bb.value}\n`+
+				 `${currency_name} scommessi: ${bb.bet_amount}\n`+
+				 `ID partita: ${bb.id_partita}\n`+
+				 `\nQuesti dati sono giusti? Rispondi`,
+			ephemeral: true
+		});
+
+		//from https://stackoverflow.com/a/70728365/12206923 and https://stackoverflow.com/a/68405712/12206923
+		const SECONDS_TO_REPLY = 120;
+		const MESSAGES_TO_COLLECT = 100;
+		const filter = (m) => m.author.id == interaction.user.id
+		const collector = interaction.channel.createMessageCollector({filter, time: SECONDS_TO_REPLY * 1000, max: MESSAGES_TO_COLLECT})
+		collector.on('collect', confirm_message => {
+			if(confirm_message.author.id == interaction.user.id && confirm_message.content == 'giusto') {
+				confirm_message.delete().then(msg => {console.log(`Deleted confirm_message from ${msg.author.username} (id:${msg.author.id}) at ${new Date()}`)}).catch(console.error);
+				db.collection('users').doc(interaction.user.id).update({
+					bet_log: admin.firestore.FieldValue.arrayUnion(bb)
+				});
+				interaction.followUp({content: "Confermato", ephemeral: true});
+			}
+		});
+		collector.on('end', (collected, reason) => {
+				// only send a message when the "end" event fires because of timeout
+				console.log("bet cancelled (reason:"+reason+"):");
+				console.log(bb);
+		});
 	}
 	if(interaction.commandName === 'money') {
 		d = (await db.collection('users').doc(interaction.user.id).get()).data();
