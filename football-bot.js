@@ -97,8 +97,15 @@ try{
 }catch(e){console.log(e)}
 });
 
-client.on('messageCreate', () => {
+client.on('messageCreate', async (message) => {
 	console.log("ciao");
+	/*
+	if(message.content == 's') { //code to retrieve the bet from the match id
+		d = (await db.collection('users').doc(message.author.id).get()).data();
+		b = d.bet_log.filter(e => e.id_partita == 5);
+		console.log(b);
+	}
+	*/
 });
 
 client.on('interactionCreate', async interaction => {
