@@ -54,7 +54,7 @@ try{
 	console.log(`Logged in as ${client.user.id} at ${data_boot}.\n`+
 		    `prefix: ${p}`
 	);
-	scheduler.scheduleJob({second: 0, minute: 0, hour: 6, dayOfWeek: 1}, ()=>{
+	scheduler.scheduleJob({second: 0, minute: 0, hour: 6, dayOfWeek: 1}, async ()=>{
 		data_now  = new Date();
 		data_week = nextweek(data_now);
 		data_now  = data_now.getFullYear()  +"-"+ data_now.getMonth()  +"-"+ data_now.getDate();
@@ -107,7 +107,7 @@ try{
 			//(await client.channels.fetch('481512731569160224')).send(msg);
 			(await client.channels.fetch('963346629258272828')).send(msg);
 		}
-	}
+	});
 }catch(e){console.log(e)}
 });
 
