@@ -176,9 +176,9 @@ client.on('interactionCreate', async interaction => {
 		d = (await db.collection('users').doc(interaction.user.id).get()).data();
 		if(d != undefined) {
 			rep = d.money;
-			interaction.reply(""+rep);
+			interaction.reply(`${rep} ${currency_name}`);
 		}else
-			interaction.reply("Non hai ancora soldi.");
+			interaction.reply(`Non hai ancora ${currency_name}.`);
 	}
 });
 
