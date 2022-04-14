@@ -6,3 +6,5 @@ custom_modules/
 package-lock.json
 *cert*
 *comments*
+*vs*.jpg
+a.js
