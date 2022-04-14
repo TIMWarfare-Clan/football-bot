@@ -22,6 +22,7 @@ const default_values = {
 	played: 0,
 	won: 0
 }
+const id_channel = '963346629258272828';
 
 const client = new Client({
 	intents: ["GUILDS", "GUILD_MESSAGES"]
@@ -61,24 +62,24 @@ try{
 		data_week = data_week.getFullYear() +"-"+ data_week.getMonth() +"-"+ data_week.getDate();
 		console.log(data_now);
 		console.log(data_week);
-		resp = await ask_elena('/v2/seasons/4270/fixtures?from='+data_now+'&to='+data_week);
-		//resp = require('./a.js').a();
+		//resp = await ask_elena('/v2/seasons/4270/fixtures?from='+data_now+'&to='+data_week);
+		resp = require('./a.js').a();
 		console.log(resp.data);
+		array_ids = [];
 
-		for(const partita of resp.data.data) {
-			match = partita;
+		for(const match of resp.data.data) {
 			img = await jimp.read('vs.jpg');
 			img_home = await jimp.read("https://cdn.elenasport.io/badges/150x150/"+match.idHome);
 			img_away = await jimp.read("https://cdn.elenasport.io/badges/150x150/"+match.idAway);
-			img.composite(img_home, 10, 105); //0, 360/2 - 150/2
-			img.composite(img_away, 480, 105);
-			img.write(match.idHome+"vs"+match.idAway+".jpg");
+			await img.composite(img_home, 10, 105); //0, 360/2 - 150/2
+			await img.composite(img_away, 480, 105);
+			await img.writeAsync(match.idHome+"vs"+match.idAway+".jpg");
 			msg = {
 				embeds: [
 					{
 						"title": match.leagueName,
-						"description": `Il **<t:${new Date(partita.date).getTime() / 1000}>** giocheranno **${partita.homeName} (in casa)** contro **${partita.awayName} (in trasferta)**`,
-						"url": "https://elenasport-io1.p.rapidapi.com",
+						"description": `Il **<t:${new Date(match.date).getTime() / 1000}>** giocheranno **${match.homeName} (in casa)** contro **${match.awayName} (in trasferta)**`,
+						//"url": "https://elenasport-io1.p.rapidapi.com", //TODO: add link to everything and to this
 						"color": 9532993,
 						"timestamp": new Date(),
 						"image": {
@@ -86,11 +87,11 @@ try{
 						},
 						"fields": [
 							{
-								"name": "per scommettere usa (il messaggio non verrà visto dagli altri utenti):",
+								"name": "Per scommettere usa (il messaggio non verrà visto dagli altri utenti):",
 								"value": "`/bet`, con `id`:`"+match.id+"`"
 							},
 							{
-								"name": "per vedere il tuo bilancio attuale usa:",
+								"name": "Per vedere il tuo bilancio attuale usa:",
 								"value": "`/money`"
 							}
 						]
@@ -104,8 +105,59 @@ try{
 				]
 			}
 			console.log(msg);
+			console.log(resp.data.data.length);
 			//(await client.channels.fetch('481512731569160224')).send(msg);
-			(await client.channels.fetch('963346629258272828')).send(msg);
+			array_ids.push({
+				partita_id: match.id,
+				message_id: (await (await client.channels.fetch(id_channel)).send(msg)).id
+			});
+			console.log(array_ids,array_ids.length);
+		}
+		db.collection('messages').doc('messages').set({array_ids: array_ids});
+	});
+	scheduler.scheduleJob("*/20 * * * *", async ()=>{
+		ids = (await db.collection('messages').doc('messages').get()).data().array_ids;
+		for(const blyat of ids) {
+			mss = (await (await client.channels.fetch(id_channel)).messages.fetch(blyat.message_id));
+			//match = (await ask_elena('/v2/fixtures/'+blyat.partita_id)).data.data[0];
+			match = require('./a.js').a().data.data[0];
+			console.log(match);
+			if(match.status == 'in progress') //
+			else if(match.status == 'finished') //
+		//	img = await jimp.read('vs.jpg');
+		//	img_home = await jimp.read("https://cdn.elenasport.io/badges/150x150/"+match.idHome);
+		//	img_away = await jimp.read("https://cdn.elenasport.io/badges/150x150/"+match.idAway);
+		//	await img.composite(img_home, 10, 105); //0, 360/2 - 150/2
+		//	await img.composite(img_away, 480, 105);
+		//	await img.writeAsync(match.idHome+"vs"+match.idAway+".jpg");
+		//	home_sum = match.team_home_90min_goals + match.team_home_ET_goals + match.team_home_PEN_goals;
+		//	away_sum = match.team_away_90min_goals + match.team_away_ET_goals + match.team_away_PEN_goals;
+		//	msg = {
+		//		embeds: [
+		//			{
+		//				"title": match.leagueName,
+		//				"description": `La partita del **<t:${new Date(match.date).getTime() / 1000}>**, giocata da **${match.homeName} (in casa)** contro **${match.awayName} (in trasferta)**, è finita **${home_sum}-${away_sum}**.\nLe ricompense delle scommesse sono state accreditate ed è stata inviata una notifica nei messaggi privati a chi a scommesso.`,
+		//				//"url": "https://elenasport-io1.p.rapidapi.com", //TODO: add link to everything and to this
+		//				"color": 9532993,
+		//				"timestamp": new Date(),
+		//				"image": {
+		//					"url": "attachment://vs.jpg",
+		//				},
+		//				"fields": [
+		//					{
+		//						"name": "ID Partita:",
+		//						"value": "`"+match.id+"`"
+		//					},
+		//					{
+		//						"name": "Per vedere il tuo bilancio attuale usa:",
+		//						"value": "`/money`"
+		//					}
+		//				]
+		//			}
+		//		],
+		//	}
+		//	console.log(msg);
+		//	mss.edit(msg);
 		}
 	});
 }catch(e){console.log(e)}
