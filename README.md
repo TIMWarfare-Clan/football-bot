@@ -5,3 +5,5 @@ tok=YOUR_TOKEN
 ```
 * Use `npm install`/`npm i` to install dependencies
 * Use `npm run dev` to run the bot
+
+[TODO](TODO.md)
