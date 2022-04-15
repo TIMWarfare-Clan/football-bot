@@ -129,7 +129,7 @@ try{
 			if(new Date(matchy.data_partita) >= new Date()) continue; //if not yet started skip
 			await sleep(6000); //to void getting rate-limited (max 10/min)
 			match = (await ask_elena('/v2/fixtures/'+matchy.partita_id)).data.data[0];
-			//match = require('./a.js').a().data.data[0];
+			//match = require('./a.js').a().data.data.filter(e => e.id == matchy.partita_id)[0];
 			console.log(match);
 			if(match.status == 'not started') continue; //shouldn't ever run, but just to be sure
 			msg = {
