@@ -122,54 +122,86 @@ try{
 	});
 	scheduler.scheduleJob("*/20 * * * *", async ()=>{
 		ids = (await db.collection('messages').doc('messages').get()).data().array_ids;
-		for(const blyat of ids) {
-			mss = (await (await client.channels.fetch(id_channel)).messages.fetch(blyat.message_id));
-			//match = (await ask_elena('/v2/fixtures/'+blyat.partita_id)).data.data[0];
-			match = require('./a.js').a().data.data[0];
+		for(const matchy of ids) {
+			console.log(matchy);
+			if(new Date(matchy.data_partita) >= new Date()) continue; //if not yet started skip
+			await sleep(6000); //to void getting rate-limited (max 10/min)
+			match = (await ask_elena('/v2/fixtures/'+matchy.partita_id)).data.data[0];
+			//match = require('./a.js').a().data.data[0];
 			console.log(match);
-			if(match.status == 'not started') continue;
-			home_sum = match.team_home_90min_goals + match.team_home_ET_goals + match.team_home_PEN_goals;
-			away_sum = match.team_away_90min_goals + match.team_away_ET_goals + match.team_away_PEN_goals;
-			fields = [
-				{
-					"name": "ID Partita:",
-					"value": "`"+match.id+"`"
-				},
-				{
-					"name": "Per vedere il tuo bilancio attuale usa:",
-					"value": "`/money`"
-				}
-			]
-			if(match.status == 'in progress') {
-				desc = `La partita del **<t:${new Date(match.date).getTime() / 1000}>**, giocata da **${match.homeName} (in casa)** contro **${match.awayName} (in trasferta)**, è in corso.\n **${home_sum}-${away_sum}**.`
-				color = 9532993;
-				fields.splice(0, 0, {
-					"name": "Punteggi",
-					"value": `${match.homeName}: ${home_sum}\n${match.awayName}: ${away_sum}`
-				});
-			}
-			else if(match.status == 'finished') {
-				desc = `La partita del **<t:${new Date(match.date).getTime() / 1000}>**, giocata da **${match.homeName} (in casa)** contro **${match.awayName} (in trasferta)**, è finita **${home_sum}-${away_sum}**.\nLe ricompense delle scommesse sono state accreditate ed è stata inviata una notifica nei messaggi privati a chi a scommesso.`;
-				color = 9532993;
-				f = 
-			}
+			if(match.status == 'not started') continue; //shouldn't ever run, but just to be sure
 			msg = {
 				embeds: [
 					{
 						"title": match.leagueName,
-						"description": desc,
+						"description": "",
 						//"url": "https://elenasport-io1.p.rapidapi.com", //TODO: add link to everything and to this
-						"color": color,
+						"color": 0,
 						"timestamp": new Date(),
 						"image": {
 							"url": "attachment://vs.jpg",
 						},
-						"fields": fields
+						"fields": [
+							{
+								"name": "ID Partita:",
+								"value": "`"+match.id+"`"
+							},
+							{
+								"name": "Per vedere il tuo bilancio attuale usa:",
+								"value": "`/money`"
+							}
+						]
 					}
 				],
 			}
+			home_sum = match.team_home_90min_goals + match.team_home_ET_goals + match.team_home_PEN_goals;
+			away_sum = match.team_away_90min_goals + match.team_away_ET_goals + match.team_away_PEN_goals;
+			if(match.status == 'in progress') {
+				msg.embeds[0].description = `La partita del **<t:${new Date(match.date).getTime() / 1000}>**, giocata da **${match.homeName} (in casa)** contro **${match.awayName} (in trasferta)**, è in corso.\n **${home_sum}-${away_sum}**.`
+				msg.embeds[0].color = 9532993;
+				msg.embeds[0].fields.splice(0, 0, {
+					"name": "Punteggi:",
+					"value": `*${match.homeName}*: ${home_sum}\n*${match.awayName}*: ${away_sum}`
+				});
+			}
+			else if(match.status == 'finished') {
+				msg.embeds[0].description = `La partita del **<t:${new Date(match.date).getTime() / 1000}>**, giocata da **${match.homeName} (in casa)** contro **${match.awayName} (in trasferta)**, è finita.\nLe ricompense delle scommesse sono state accreditate ed è stata inviata una notifica nei messaggi privati a chi a scommesso.`;
+				msg.embeds[0].color = 9532993;
+				msg.embeds[0].fields.splice(0, 0,
+					{
+						"name": `__${match.homeName}__:`,
+						"value": `**${home_sum}**`,
+						"inline": true
+					},
+					{
+						"name": `__${match.awayName}__:`,
+						"value": `**${away_sum}**`,
+						"inline": true
+					}
+				);
+				//update money
+				//d = (await db.collection('users').doc(message.author.id).get()).data();
+				//b = d.bet_log.filter(e => e.id_partita == 5);
+				//console.log(b);
+				ards = (await db.collection('messages').doc('messages').get()).data().array_ids;
+				ar  = ards.filter(e => e.partita_id != match.id);
+				art = ards.filter(e => e.partita_id == match.id);
+				db.collection('messages').doc('messages').set({array_ids: ar});
+				db.collection('messages').doc('to_delete').update({
+					array_ids: admin.firestore.FieldValue.arrayUnion(...art) //spread operator ES6
+				});
+				console.log(`${match.id} removed from messages and added to to_delete`);
+			}
+			else if(match.status == 'cancelled') {
+				msg.embeds[0].description = `La partita del **<t:${new Date(match.date).getTime() / 1000}>**, giocata da **${match.homeName} (in casa)** contro **${match.awayName} (in trasferta)**, è stata annullata.`;
+				msg.embeds[0].color = 9532993;
+			}
+			else if(match.status == 'postponed') {
+				msg.embeds[0].description = `La partita del **<t:${new Date(match.date).getTime() / 1000}>**, giocata da **${match.homeName} (in casa)** contro **${match.awayName} (in trasferta)**, è stata rimandata.`;
+				msg.embeds[0].color = 9532993;
+			}
 			console.log(msg);
-			mss.edit(msg);
+			(await (await client.channels.fetch(id_channel)).messages.fetch(matchy.message_id)).edit(msg);
 		}
 	});
 }catch(e){console.log(e)}
