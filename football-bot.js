@@ -48,6 +48,11 @@ function nextweek(today){ //from https://stackoverflow.com/a/1025723/12206923
 	nextweek = new Date(today.getFullYear(), today.getMonth(), today.getDate()+7);
 	return nextweek;
 }
+function sleep(ms) { //from https://stackoverflow.com/a/41957152/12206923
+	return new Promise((resolve) => {
+		setTimeout(resolve, ms);
+	});
+}
 
 client.once('ready', async () => {
 try{
