@@ -93,7 +93,7 @@ try{
 						"fields": [
 							{
 								"name": "Per scommettere usa (il messaggio non verrà visto dagli altri utenti):",
-								"value": "`/bet`, con `id`:`"+match.id+"`"
+								"value": "`/bet`, con `id` `"+match.id+"`"
 							},
 							{
 								"name": "Per vedere il tuo bilancio attuale usa:",
@@ -114,11 +114,13 @@ try{
 			//(await client.channels.fetch('481512731569160224')).send(msg);
 			array_ids.push({
 				partita_id: match.id,
+				data_partita: new Date(match.date).toISOString(),
 				message_id: (await (await client.channels.fetch(id_channel)).send(msg)).id
 			});
 			console.log(array_ids,array_ids.length);
 		}
 		db.collection('messages').doc('messages').set({array_ids: array_ids});
+		console.log("finished sending matches' messages");
 	});
 	scheduler.scheduleJob("*/20 * * * *", async ()=>{
 		ids = (await db.collection('messages').doc('messages').get()).data().array_ids;
