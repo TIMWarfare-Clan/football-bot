@@ -79,14 +79,15 @@ try{
 		    `prefix: ${p}`
 	);
 	scheduler.scheduleJob({second: 0, minute: 0, hour: 6, dayOfWeek: 1}, async ()=>{
+		console.log("start sending matches");
 		data_now  = new Date();
 		data_week = nextweek(data_now);
 		data_now  = data_now.getFullYear()  +"-"+ data_now.getMonth()  +"-"+ data_now.getDate();
 		data_week = data_week.getFullYear() +"-"+ data_week.getMonth() +"-"+ data_week.getDate();
 		console.log(data_now);
 		console.log(data_week);
-		//resp = await ask_elena('/v2/seasons/4270/fixtures?from='+data_now+'&to='+data_week);
-		resp = require('./a.js').a();
+		resp = await ask_elena('/v2/seasons/4270/fixtures?from='+data_now+'&to='+data_week);
+		//resp = require('./a.js').a();
 		console.log(resp.data);
 		array_ids = [];
 
@@ -140,7 +141,9 @@ try{
 		db.collection('messages').doc('messages').set({array_ids: array_ids});
 		console.log("finished sending matches' messages");
 	});
+
 	scheduler.scheduleJob("*/20 * * * *", async ()=>{
+		console.log("start updating matches");
 		ids = (await db.collection('messages').doc('messages').get()).data().array_ids;
 		for(const matchy of ids) {
 			console.log(matchy);
