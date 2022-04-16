@@ -53,6 +53,24 @@ function sleep(ms) { //from https://stackoverflow.com/a/41957152/12206923
 		setTimeout(resolve, ms);
 	});
 }
+async function update_money(match_id, home_sum, away_sum) { //update money
+	if	(home_sum > away_sum) 	r = "1";
+	else if	(home_sum < away_sum) 	r = "2";
+	else if	(home_sum == away_sum) 	r = "X";
+	coll = await db.collection('users');
+	docs = (await coll.get()).docs;
+	for(user_doc of docs) {
+		user_data = user_doc.data();
+		b = user_data.bet_log.filter(e => e.id_partita == match_id);
+		console.log(b);
+		for(bet of b) {
+			if(bet.bet_value.includes(r))
+				coll.doc(user_doc.id).update({
+					money: admin.firestore.FieldValue.increment(bet.bet_amount)
+				});
+		}
+	}
+}
 
 client.once('ready', async () => {
 try{
@@ -181,10 +199,7 @@ try{
 						"inline": true
 					}
 				);
-				//update money
-				//d = (await db.collection('users').doc(message.author.id).get()).data();
-				//b = d.bet_log.filter(e => e.id_partita == 5);
-				//console.log(b);
+				update_money(match.id, home_sum, home_sum);
 				ards = (await db.collection('messages').doc('messages').get()).data().array_ids;
 				ar  = ards.filter(e => e.partita_id != match.id);
 				art = ards.filter(e => e.partita_id == match.id);
