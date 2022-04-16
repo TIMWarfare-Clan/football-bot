@@ -22,7 +22,7 @@ const default_values = {
 	played: 0,
 	won: 0
 }
-const id_channel = '963346629258272828';
+const id_channel = '964875578127810601';
 
 const client = new Client({
 	intents: ["GUILDS", "GUILD_MESSAGES"]
