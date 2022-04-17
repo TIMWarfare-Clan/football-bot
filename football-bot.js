@@ -16,7 +16,7 @@ const scheduler = require('node-schedule');
 var axios = require("axios").default;
 
 //global variables
-const currency_name = "Pippo";
+const currency_name = "credit (1 credit = 1 <:shadowsdesign:893222216966225960>)";
 const default_values = {
 	money: 0,
 	played: 0,
