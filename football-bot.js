@@ -66,11 +66,8 @@ async function update_money(match_id, home_sum, away_sum) { //update money
 		for(bet of b) {
 			if(bet.bet_value.includes(r))
 				coll.doc(user_doc.id).update({
-					money: admin.firestore.FieldValue.increment(bet.bet_amount)
-				});
-			else
-				coll.doc(user_doc.id).update({
-					money: admin.firestore.FieldValue.decrement(bet.bet_amount)
+					money: admin.firestore.FieldValue.increment(bet.bet_amount),
+					won:   admin.firestore.FieldValue.increment(1)
 				});
 		}
 	}
@@ -275,9 +272,11 @@ client.on('interactionCreate', async interaction => {
 			if(confirm_message.content == 'giusto') {
 				confirm_message.delete().then(msg => {console.log(`Deleted confirm_message from ${msg.author.username} (id:${msg.author.id}) at ${new Date()}`)}).catch(console.error);
 				doc = await db.collection('users').doc(interaction.user.id);
-				doc.set(default_values, {merge: true})
+				//doc.set(default_values, {merge: true})
 				doc.update({
-					bet_log: admin.firestore.FieldValue.arrayUnion(bb)
+					bet_log: admin.firestore.FieldValue.arrayUnion(bb),
+					money:   admin.firestore.FieldValue.increment(-bb.bet_amount),
+					played:  admin.firestore.FieldValue.increment(1)
 				});
 				interaction.followUp({content: "Confermato", ephemeral: eph});
 				console.log(bb.id_partita+" confirmed");
