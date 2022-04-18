@@ -68,6 +68,10 @@ async function update_money(match_id, home_sum, away_sum) { //update money
 				coll.doc(user_doc.id).update({
 					money: admin.firestore.FieldValue.increment(bet.bet_amount)
 				});
+			else
+				coll.doc(user_doc.id).update({
+					money: admin.firestore.FieldValue.decrement(bet.bet_amount)
+				});
 		}
 	}
 }
