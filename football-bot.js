@@ -83,8 +83,8 @@ try{
 		console.log("start sending matches");
 		data_now  = new Date();
 		data_week = nextweek(data_now);
-		data_now  = data_now.getFullYear()  +"-"+ data_now.getMonth()  +"-"+ data_now.getDate();
-		data_week = data_week.getFullYear() +"-"+ data_week.getMonth() +"-"+ data_week.getDate();
+		data_now  = data_now.getFullYear()  +"-"+ (data_now.getMonth()+1)  +"-"+ data_now.getDate();
+		data_week = data_week.getFullYear() +"-"+ (data_week.getMonth()+1) +"-"+ data_week.getDate();
 		console.log(data_now);
 		console.log(data_week);
 		resp = await ask_elena('/v2/seasons/4270/fixtures?from='+data_now+'&to='+data_week);
