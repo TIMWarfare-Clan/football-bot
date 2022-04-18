@@ -91,6 +91,7 @@ try{
 		console.log(resp.data);
 		array_ids = [];
 
+		cc = (await client.channels.fetch(id_channel));
 		for(const match of resp.data.data) {
 			img = await jimp.read('vs.jpg');
 			img_home = await jimp.read("https://cdn.elenasport.io/badges/150x150/"+match.idHome);
@@ -134,7 +135,7 @@ try{
 			array_ids.push({
 				partita_id: match.id,
 				data_partita: new Date(match.date).toISOString(),
-				message_id: (await (await client.channels.fetch(id_channel)).send(msg)).id
+				message_id: (await cc.send(msg)).id
 			});
 			console.log(array_ids,array_ids.length);
 		}
