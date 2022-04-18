@@ -150,7 +150,7 @@ try{
 		for(const matchy of ids) {
 			console.log(matchy);
 			if(new Date(matchy.data_partita) >= new Date()) continue; //if not yet started skip
-			await sleep(6000); //to void getting rate-limited (max 10/min)
+			await sleep(6000); //to avoid getting rate-limited (max 10/min)
 			match = (await ask_elena('/v2/fixtures/'+matchy.partita_id)).data.data[0];
 			//match = require('./a.js').a().data.data.filter(e => e.id == matchy.partita_id)[0];
 			console.log(match);
@@ -253,7 +253,7 @@ client.on('interactionCreate', async interaction => {
 		}
 		interaction.reply({
 			content: `Bet registrata:\n`+
-				 `Scommessa: ${bb.value}\n`+
+				 `Scommessa: ${bb.bet_value}\n`+
 				 `${currency_name} scommessi: ${bb.bet_amount}\n`+
 				 `ID partita: ${bb.id_partita}\n`+
 				 "\nQuesti dati sono giusti?\n"+
@@ -272,7 +272,7 @@ client.on('interactionCreate', async interaction => {
 			if(confirm_message.content == 'giusto') {
 				confirm_message.delete().then(msg => {console.log(`Deleted confirm_message from ${msg.author.username} (id:${msg.author.id}) at ${new Date()}`)}).catch(console.error);
 				doc = await db.collection('users').doc(interaction.user.id);
-				//doc.set(default_values, {merge: true})
+				await doc.set({yes:0}, {merge: true})
 				doc.update({
 					bet_log: admin.firestore.FieldValue.arrayUnion(bb),
 					money:   admin.firestore.FieldValue.increment(-bb.bet_amount),

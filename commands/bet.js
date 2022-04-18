@@ -11,8 +11,8 @@ exports.data = new SlashCommandBuilder()
 			.addChoice('1',  '1')
 			.addChoice('X',  'x')
 			.addChoice('2',  '2')
-			.addChoice('1X', '1x')
-			.addChoice('X2', 'x2')
+			.addChoice('1X', '1X')
+			.addChoice('X2', 'X2')
 			.addChoice('12', '12'))
 	.addIntegerOption(
 		option => option
