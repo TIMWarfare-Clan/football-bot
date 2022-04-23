@@ -44,10 +44,12 @@ async function ask_elena(endpoint) {
 
 	return await axios.request(options)
 }
+/*
 function nextweek(today){ //from https://stackoverflow.com/a/1025723/12206923
 	nextweek = new Date(today.getFullYear(), today.getMonth(), today.getDate()+7);
 	return nextweek;
 }
+*/
 function sleep(ms) { //from https://stackoverflow.com/a/41957152/12206923
 	return new Promise((resolve) => {
 		setTimeout(resolve, ms);
@@ -81,15 +83,15 @@ try{
 		    `prefix: ${p}\n`+
 		    `id_channel: ${id_channel}`
 	);
-	scheduler.scheduleJob({second: 0, minute: 0, hour: 6, dayOfWeek: 1}, async ()=>{
+	scheduler.scheduleJob({second: 0, minute: 0, hour: 6}, async ()=>{
 		console.log("start sending matches");
-		data_now  = new Date();
-		data_week = nextweek(data_now);
-		data_now  = data_now.getFullYear()  +"-"+ (data_now.getMonth()+1)  +"-"+ data_now.getDate();
-		data_week = data_week.getFullYear() +"-"+ (data_week.getMonth()+1) +"-"+ data_week.getDate();
-		console.log(data_now);
-		console.log(data_week);
-		resp = await ask_elena('/v2/seasons/4270/fixtures?from='+data_now+'&to='+data_week);
+		//data_now  = new Date();
+		//data_week = nextweek(data_now);
+		//data_now  = data_now.getFullYear()  +"-"+ (data_now.getMonth()+1)  +"-"+ data_now.getDate();
+		//data_week = data_week.getFullYear() +"-"+ (data_week.getMonth()+1) +"-"+ data_week.getDate();
+		//console.log(data_now);
+		//console.log(data_week);
+		resp = await ask_elena('/v2/seasons/4270/upcoming');
 		//resp = require('./a.js').a();
 		console.log(resp.data);
 		array_ids = [];
