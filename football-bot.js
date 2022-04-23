@@ -22,7 +22,7 @@ const default_values = {
 	played: 0,
 	won: 0
 }
-const id_channel = '964875578127810601';
+var id_channel = '964875578127810601';
 
 const client = new Client({
 	intents: ["GUILDS", "GUILD_MESSAGES"]
@@ -76,8 +76,10 @@ async function update_money(match_id, home_sum, away_sum) { //update money
 client.once('ready', async () => {
 try{
 	data_boot = new Date();
-	console.log(`Logged in as ${client.user.id} at ${data_boot}.\n`+
-		    `prefix: ${p}`
+	id_channel = (await db.collection('config').doc('channel').get()).data().id;
+	console.log(`Logged in as ${client.user.id} at ${data_boot}\n`+
+		    `prefix: ${p}\n`+
+		    `id_channel: ${id_channel}`
 	);
 	scheduler.scheduleJob({second: 0, minute: 0, hour: 6, dayOfWeek: 1}, async ()=>{
 		console.log("start sending matches");
