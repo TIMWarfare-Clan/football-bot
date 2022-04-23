@@ -85,67 +85,70 @@ try{
 	);
 	scheduler.scheduleJob({second: 0, minute: 0, hour: 6}, async ()=>{
 		console.log("start sending matches");
-		//data_now  = new Date();
-		//data_week = nextweek(data_now);
-		//data_now  = data_now.getFullYear()  +"-"+ (data_now.getMonth()+1)  +"-"+ data_now.getDate();
-		//data_week = data_week.getFullYear() +"-"+ (data_week.getMonth()+1) +"-"+ data_week.getDate();
-		//console.log(data_now);
-		//console.log(data_week);
-		resp = await ask_elena('/v2/seasons/4270/upcoming');
-		//resp = require('./a.js').a();
-		console.log(resp.data);
-		array_ids = [];
+		season_ids = (await db.collection('config').doc('seasons').get()).data().ids;
+		for(const season_id of season_ids) {
+			//data_now  = new Date();
+			//data_week = nextweek(data_now);
+			//data_now  = data_now.getFullYear()  +"-"+ (data_now.getMonth()+1)  +"-"+ data_now.getDate();
+			//data_week = data_week.getFullYear() +"-"+ (data_week.getMonth()+1) +"-"+ data_week.getDate();
+			//console.log(data_now);
+			//console.log(data_week);
+			resp = await ask_elena('/v2/seasons/'+season_id+'/upcoming');
+			//resp = require('./a.js').a();
+			console.log(resp.data);
+			array_ids = [];
 
-		cc = (await client.channels.fetch(id_channel));
-		for(const match of resp.data.data) {
-			img = await jimp.read('vs.jpg');
-			img_home = await jimp.read("https://cdn.elenasport.io/badges/150x150/"+match.idHome);
-			img_away = await jimp.read("https://cdn.elenasport.io/badges/150x150/"+match.idAway);
-			await img.composite(img_home, 10, 105); //0, 360/2 - 150/2
-			await img.composite(img_away, 480, 105);
-			await img.writeAsync(match.idHome+"vs"+match.idAway+".jpg");
-			msg = {
-				embeds: [
-					{
-						"title": match.leagueName,
-						"description": `Il **<t:${new Date(match.date).getTime() / 1000}>** giocheranno **${match.homeName} (in casa)** contro **${match.awayName} (in trasferta)**`,
-						//"url": "https://elenasport-io1.p.rapidapi.com", //TODO: add link to everything and to this
-						"color": 9532993,
-						"timestamp": new Date(),
-						"image": {
-							"url": "attachment://vs.jpg",
-						},
-						"fields": [
-							{
-								"name": "Per scommettere usa (il messaggio non verrà visto dagli altri utenti):",
-								"value": "`/bet`, con `id` `"+match.id+"`"
+			cc = (await client.channels.fetch(id_channel));
+			for(const match of resp.data.data) {
+				img = await jimp.read('vs.jpg');
+				img_home = await jimp.read("https://cdn.elenasport.io/badges/150x150/"+match.idHome);
+				img_away = await jimp.read("https://cdn.elenasport.io/badges/150x150/"+match.idAway);
+				await img.composite(img_home, 10, 105); //0, 360/2 - 150/2
+				await img.composite(img_away, 480, 105);
+				await img.writeAsync(match.idHome+"vs"+match.idAway+".jpg");
+				msg = {
+					embeds: [
+						{
+							"title": match.leagueName,
+							"description": `Il **<t:${new Date(match.date).getTime() / 1000}>** giocheranno **${match.homeName} (in casa)** contro **${match.awayName} (in trasferta)**`,
+							//"url": "https://elenasport-io1.p.rapidapi.com", //TODO: add link to everything and to this
+							"color": 9532993,
+							"timestamp": new Date(),
+							"image": {
+								"url": "attachment://vs.jpg",
 							},
-							{
-								"name": "Per vedere il tuo bilancio attuale usa:",
-								"value": "`/money`"
-							}
-						]
-					}
-				],
-				files: [
-					{
-						"attachment": match.idHome+"vs"+match.idAway+".jpg",
-						"name": "vs.jpg"
-					}
-				]
+							"fields": [
+								{
+									"name": "Per scommettere usa (il messaggio non verrà visto dagli altri utenti):",
+									"value": "`/bet`, con `id` `"+match.id+"`"
+								},
+								{
+									"name": "Per vedere il tuo bilancio attuale usa:",
+									"value": "`/money`"
+								}
+							]
+						}
+					],
+					files: [
+						{
+							"attachment": match.idHome+"vs"+match.idAway+".jpg",
+							"name": "vs.jpg"
+						}
+					]
+				}
+				console.log(msg);
+				console.log(resp.data.data.length);
+				//(await client.channels.fetch('481512731569160224')).send(msg);
+				array_ids.push({
+					partita_id: match.id,
+					data_partita: new Date(match.date).toISOString(),
+					message_id: (await cc.send(msg)).id
+				});
+				console.log(array_ids,array_ids.length);
 			}
-			console.log(msg);
-			console.log(resp.data.data.length);
-			//(await client.channels.fetch('481512731569160224')).send(msg);
-			array_ids.push({
-				partita_id: match.id,
-				data_partita: new Date(match.date).toISOString(),
-				message_id: (await cc.send(msg)).id
-			});
-			console.log(array_ids,array_ids.length);
+			db.collection('messages').doc('messages').set({array_ids: array_ids});
+			console.log("finished sending matches' messages");
 		}
-		db.collection('messages').doc('messages').set({array_ids: array_ids});
-		console.log("finished sending matches' messages");
 	});
 
 	scheduler.scheduleJob("*/20 * * * *", async ()=>{
