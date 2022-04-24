@@ -254,51 +254,60 @@ client.on('interactionCreate', async interaction => {
 	if(interaction.commandName === 'bet') {
 		eph = true;
 		bb = {
-			"bet_value": interaction.options.getString('value'),
-			"bet_amount": interaction.options.getInteger('bet'),
-			"id_partita": interaction.options.getString('id'),
-			"timestamp": new Date().toISOString()
+			bet_value:  interaction.options.getString('value'),
+			bet_amount: interaction.options.getInteger('bet'),
+			id_partita: interaction.options.getString('id'),
+			timestamp:  new Date().toISOString()
 		}
-		interaction.reply({
-			content: `Bet registrata:\n`+
-				 `Scommessa: ${bb.bet_value}\n`+
-				 `${currency_name} scommessi: ${bb.bet_amount}\n`+
-				 `ID partita: ${bb.id_partita}\n`+
-				 "\nQuesti dati sono giusti?\n"+
-				 "Rispondi con `giusto` per confermare o con `annulla` per annullare entro 2 minuti.",
-			ephemeral: eph
-		});
+		id = (await db.collection('messages').doc('messages').get()).data().array_ids.filter(e => e.partita_id == bb.id_partita);
+		console.log(id);
+		if(new Date(id.data_partita) >= new Date()) { //you can bet only if the match has not started yet
+			interaction.reply({
+				content: `Bet registrata:\n`+
+					 `Scommessa: ${bb.bet_value}\n`+
+					 `${currency_name} scommessi: ${bb.bet_amount}\n`+
+					 `ID partita: \`${bb.id_partita}\`\n`+
+					 "\nQuesti dati sono giusti?\n"+
+					 "Rispondi con `giusto` per confermare o con `annulla` per annullare entro 2 minuti.",
+				ephemeral: eph
+			});
 
-		//from https://stackoverflow.com/a/70728365/12206923 and https://stackoverflow.com/a/68405712/12206923
-		const SECONDS_TO_REPLY = 120;
-		const MESSAGES_TO_COLLECT = 1;
-		const filter = (m) => {
-			return m.author.id == interaction.user.id && (m.content == 'giusto' || m.content == 'annulla')
-		}
-		const collector = interaction.channel.createMessageCollector({filter, time: SECONDS_TO_REPLY * 1000, max: MESSAGES_TO_COLLECT})
-		collector.on('collect', async confirm_message => {
-			if(confirm_message.content == 'giusto') {
-				confirm_message.delete().then(msg => {console.log(`Deleted confirm_message from ${msg.author.username} (id:${msg.author.id}) at ${new Date()}`)}).catch(console.error);
-				doc = await db.collection('users').doc(interaction.user.id);
-				await doc.set({yes:0}, {merge: true})
-				doc.update({
-					bet_log: admin.firestore.FieldValue.arrayUnion(bb),
-					money:   admin.firestore.FieldValue.increment(-bb.bet_amount),
-					played:  admin.firestore.FieldValue.increment(1)
-				});
-				interaction.followUp({content: "Confermato", ephemeral: eph});
-				console.log(bb.id_partita+" confirmed");
-			}else if(confirm_message.content == 'annulla') {
-				interaction.followUp({content: "Annullato", ephemeral: eph});
-				console.log(bb.id_partita+" canceled");
+			//from https://stackoverflow.com/a/70728365/12206923 and https://stackoverflow.com/a/68405712/12206923
+			const SECONDS_TO_REPLY = 120;
+			const MESSAGES_TO_COLLECT = 1;
+			const filter = (m) => {
+				return m.author.id == interaction.user.id && (m.content == 'giusto' || m.content == 'annulla')
 			}
-		});
-		collector.on('end', (collected, reason) => {
-			console.log(bb.id_partita+" cancelled (reason:"+reason+"):");
-			console.log(bb);
-			if(reason == 'time')
-				interaction.followUp({content: "Tempo scaduto", ephemeral: eph});
-		});
+			const collector = interaction.channel.createMessageCollector({filter, time: SECONDS_TO_REPLY * 1000, max: MESSAGES_TO_COLLECT})
+			collector.on('collect', async confirm_message => {
+				if(confirm_message.content == 'giusto') {
+					confirm_message.delete().then(msg => {console.log(`Deleted confirm_message from ${msg.author.username} (id:${msg.author.id}) at ${new Date()}`)}).catch(console.error);
+					doc = await db.collection('users').doc(interaction.user.id);
+					await doc.set({yes:0}, {merge: true})
+					doc.update({
+						bet_log: admin.firestore.FieldValue.arrayUnion(bb),
+						money:   admin.firestore.FieldValue.increment(-bb.bet_amount),
+						played:  admin.firestore.FieldValue.increment(1)
+					});
+					interaction.followUp({content: "Confermato", ephemeral: eph});
+					console.log(bb.id_partita+" confirmed");
+				}else if(confirm_message.content == 'annulla') {
+					interaction.followUp({content: "Annullato", ephemeral: eph});
+					console.log(bb.id_partita+" canceled");
+				}
+			});
+			collector.on('end', (collected, reason) => {
+				console.log(bb.id_partita+" cancelled (reason:"+reason+"):");
+				console.log(bb);
+				if(reason == 'time')
+					interaction.followUp({content: "Tempo scaduto", ephemeral: eph});
+			});
+		} else {
+			interaction.reply({
+				content:  `Non puoi più scommettere sulla partita con ID \`${bb.id_partita}\` perché è già iniziata\n`,
+				ephemeral: eph
+			});
+		}
 	}
 	if(interaction.commandName === 'money') {
 		d = (await db.collection('users').doc(interaction.user.id).get()).data();
