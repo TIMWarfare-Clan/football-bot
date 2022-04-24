@@ -66,11 +66,13 @@ async function update_money(match_id, home_sum, away_sum) { //update money
 		b = user_data.bet_log.filter(e => e.id_partita == match_id);
 		console.log(b);
 		for(bet of b) {
-			if(bet.bet_value.includes(r))
+			if(bet.bet_value.includes(r)) {
 				coll.doc(user_doc.id).update({
 					money: admin.firestore.FieldValue.increment(bet.bet_amount),
 					won:   admin.firestore.FieldValue.increment(1)
 				});
+				client.users.fetch(user_doc.id).send(`Hai vinto la scommessa con valore ${bet.bet_value} della partita con ID \`${bet.id_partita}\` del ${new Date(bet.timestamp).getTime() / 1000}, ti sono stati aggiunti ${bet.bet_amount} credit.`);
+			}
 		}
 	}
 }
