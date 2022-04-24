@@ -83,9 +83,10 @@ try{
 		    `prefix: ${p}\n`+
 		    `id_channel: ${id_channel}`
 	);
+
 	scheduler.scheduleJob({second: 0, minute: 0, hour: 6}, async ()=>{
 		console.log("start sending matches");
-		season_ids = (await db.collection('config').doc('seasons').get()).data().ids;
+		season_ids = (await db.collection('config').doc('seasons').get()).data().ids; //TODO: use league ids and get last season id (should be league.current_season, use https://football.elenasport.io/v2/leagues/league_id?expand=current_season)
 		for(const season_id of season_ids) {
 			//data_now  = new Date();
 			//data_week = nextweek(data_now);
@@ -189,7 +190,7 @@ try{
 			home_sum = match.team_home_90min_goals + match.team_home_ET_goals + match.team_home_PEN_goals;
 			away_sum = match.team_away_90min_goals + match.team_away_ET_goals + match.team_away_PEN_goals;
 			if(match.status == 'in progress') {
-				msg.embeds[0].description = `La partita del **<t:${new Date(match.date).getTime() / 1000}>**, giocata da **${match.homeName} (in casa)** contro **${match.awayName} (in trasferta)**, è in corso.\n **${home_sum}-${away_sum}**.`
+				msg.embeds[0].description = `La partita del **<t:${new Date(match.date).getTime() / 1000}>**, giocata da **${match.homeName} (in casa)** contro **${match.awayName} (in trasferta)**, è in corso.`
 				msg.embeds[0].color = 9532993;
 				msg.embeds[0].fields.splice(0, 0, {
 					"name": "Punteggi:",
