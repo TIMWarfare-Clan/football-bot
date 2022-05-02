@@ -89,6 +89,7 @@ try{
 	scheduler.scheduleJob({second: 0, minute: 0, hour: 6}, async ()=>{
 		console.log("start sending matches");
 		season_ids = (await db.collection('config').doc('seasons').get()).data().ids; //TODO: use league ids and get last season id (should be league.current_season, use https://football.elenasport.io/v2/leagues/league_id?expand=current_season)
+		array_ids = [];
 		for(const season_id of season_ids) {
 			//data_now  = new Date();
 			//data_week = nextweek(data_now);
@@ -99,7 +100,6 @@ try{
 			resp = await ask_elena('/v2/seasons/'+season_id+'/upcoming');
 			//resp = require('./a.js').a();
 			console.log(resp.data);
-			array_ids = [];
 
 			cc = (await client.channels.fetch(id_channel));
 			for(const match of resp.data.data) {
@@ -261,52 +261,74 @@ client.on('interactionCreate', async interaction => {
 			id_partita: interaction.options.getString('id'),
 			timestamp:  new Date().toISOString()
 		}
-		id = (await db.collection('messages').doc('messages').get()).data().array_ids.filter(e => e.partita_id == bb.id_partita);
+		id = (await db.collection('messages').doc('messages').get()).data().array_ids.find(e => e.partita_id == bb.id_partita);
 		console.log(id);
-		if(new Date(id.data_partita) >= new Date()) { //you can bet only if the match has not started yet
-			interaction.reply({
-				content: `Bet registrata:\n`+
-					 `Scommessa: ${bb.bet_value}\n`+
-					 `${currency_name} scommessi: ${bb.bet_amount}\n`+
-					 `ID partita: \`${bb.id_partita}\`\n`+
-					 "\nQuesti dati sono giusti?\n"+
-					 "Rispondi con `giusto` per confermare o con `annulla` per annullare entro 2 minuti.",
-				ephemeral: eph
-			});
+		if(id != undefined) {
+			if(new Date(id.data_partita) >= new Date()) { //you can bet only if the match has not started yet
+				doc = await db.collection('users').doc(interaction.user.id);
+				doc_data = (await doc.get()).data();
+				if(!doc_data.bet_log.some(e => e.id_partita == bb.id_partita)) {
+					if(doc_data.money >= bb.bet_amount) {
+						interaction.reply({
+							content: `Bet registrata:\n`+
+								 `Scommessa: ${bb.bet_value}\n`+
+								 `${currency_name} scommessi: ${bb.bet_amount}\n`+
+								 `ID partita: \`${bb.id_partita}\`\n`+
+								 "\nQuesti dati sono giusti?\n"+
+								 "Rispondi con `giusto` per confermare o con `annulla` per annullare entro 2 minuti.",
+							ephemeral: eph
+						});
 
-			//from https://stackoverflow.com/a/70728365/12206923 and https://stackoverflow.com/a/68405712/12206923
-			const SECONDS_TO_REPLY = 120;
-			const MESSAGES_TO_COLLECT = 1;
-			const filter = (m) => {
-				return m.author.id == interaction.user.id && (m.content == 'giusto' || m.content == 'annulla')
-			}
-			const collector = interaction.channel.createMessageCollector({filter, time: SECONDS_TO_REPLY * 1000, max: MESSAGES_TO_COLLECT})
-			collector.on('collect', async confirm_message => {
-				if(confirm_message.content == 'giusto') {
-					confirm_message.delete().then(msg => {console.log(`Deleted confirm_message from ${msg.author.username} (id:${msg.author.id}) at ${new Date()}`)}).catch(console.error);
-					doc = await db.collection('users').doc(interaction.user.id);
-					await doc.set({yes:0}, {merge: true})
-					doc.update({
-						bet_log: admin.firestore.FieldValue.arrayUnion(bb),
-						money:   admin.firestore.FieldValue.increment(-bb.bet_amount),
-						played:  admin.firestore.FieldValue.increment(1)
+						//from https://stackoverflow.com/a/70728365/12206923 and https://stackoverflow.com/a/68405712/12206923
+						const SECONDS_TO_REPLY = 120;
+						const MESSAGES_TO_COLLECT = 1;
+						const filter = (m) => {
+							return m.author.id == interaction.user.id && (m.content == 'giusto' || m.content == 'annulla')
+						}
+						const collector = interaction.channel.createMessageCollector({filter, time: SECONDS_TO_REPLY * 1000, max: MESSAGES_TO_COLLECT})
+						collector.on('collect', async confirm_message => {
+							if(confirm_message.content == 'giusto') {
+								confirm_message.delete().then(msg => {console.log(`Deleted confirm_message from ${msg.author.username} (id:${msg.author.id}) at ${new Date()}`)}).catch(console.error);
+								await doc.set({yes:0}, {merge: true})
+								doc.update({
+									bet_log: admin.firestore.FieldValue.arrayUnion(bb),
+									money:   admin.firestore.FieldValue.increment(-bb.bet_amount),
+									played:  admin.firestore.FieldValue.increment(1)
+								});
+								interaction.followUp({content: "Confermato", ephemeral: eph});
+								console.log(bb.id_partita+" confirmed");
+							}else if(confirm_message.content == 'annulla') {
+								interaction.followUp({content: "Annullato", ephemeral: eph});
+								console.log(bb.id_partita+" canceled");
+							}
+						});
+						collector.on('end', (collected, reason) => {
+							console.log(bb.id_partita+" cancelled (reason:"+reason+"):");
+							console.log(bb);
+							if(reason == 'time')
+								interaction.followUp({content: "Tempo scaduto", ephemeral: eph});
+						});
+					} else {
+						interaction.reply({
+							content:  `Non hai abbastanza credit, ne hai solo ${doc_data.money}\n`,
+							ephemeral: eph
+						});
+					}
+				} else {
+					interaction.reply({
+						content:  `Hai già scommesso sulla partita con ID \`${bb.id_partita}\`\n`,
+						ephemeral: eph
 					});
-					interaction.followUp({content: "Confermato", ephemeral: eph});
-					console.log(bb.id_partita+" confirmed");
-				}else if(confirm_message.content == 'annulla') {
-					interaction.followUp({content: "Annullato", ephemeral: eph});
-					console.log(bb.id_partita+" canceled");
 				}
-			});
-			collector.on('end', (collected, reason) => {
-				console.log(bb.id_partita+" cancelled (reason:"+reason+"):");
-				console.log(bb);
-				if(reason == 'time')
-					interaction.followUp({content: "Tempo scaduto", ephemeral: eph});
-			});
+			} else {
+				interaction.reply({
+					content:  `Non puoi più scommettere sulla partita con ID \`${bb.id_partita}\` perché è già iniziata\n`,
+					ephemeral: eph
+				});
+			}
 		} else {
 			interaction.reply({
-				content:  `Non puoi più scommettere sulla partita con ID \`${bb.id_partita}\` perché è già iniziata\n`,
+				content:  `La partita con ID \`${bb.id_partita}\` non esiste o è già finita\n`,
 				ephemeral: eph
 			});
 		}
