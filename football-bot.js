@@ -102,7 +102,7 @@ try{
 		console.log("start sending matches");
 		season_ids = (await db.collection('config').doc('seasons').get()).data().ids; //TODO: use league ids and get last season id (should be league.current_season, use https://football.elenasport.io/v2/leagues/league_id?expand=current_season)
 		array_ids = [];
-		//for(const season_id of season_ids) {
+		for(const season_id of season_ids) {
 			//data_now  = new Date();
 			//data_week = nextweek(data_now);
 			//data_now  = data_now.getFullYear()  +"-"+ (data_now.getMonth()+1)  +"-"+ data_now.getDate();
@@ -111,6 +111,7 @@ try{
 			//console.log(data_week);
 			resp = await ask_elena('/v2/seasons/'+season_id+'/upcoming');
 			//resp = await ask_elena('/v2/fixtures?from=2022-09-03&to=2022-09-04');
+			//resp = await ask_elena('/v2/upcoming');
 			//resp = require('./a.js').a();
 			console.log(resp.data);
 
@@ -164,7 +165,7 @@ try{
 			}
 			db.collection('messages').doc('messages').set({array_ids: array_ids});
 			console.log("finished sending matches' messages");
-		//}
+		}
 	});
 
 	scheduler.scheduleJob("*/20 * * * *", async ()=>{
