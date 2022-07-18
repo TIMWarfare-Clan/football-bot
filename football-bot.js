@@ -95,14 +95,15 @@ try{
 		console.log("start sending matches");
 		season_ids = (await db.collection('config').doc('seasons').get()).data().ids; //TODO: use league ids and get last season id (should be league.current_season, use https://football.elenasport.io/v2/leagues/league_id?expand=current_season)
 		array_ids = [];
-		for(const season_id of season_ids) {
+		//for(const season_id of season_ids) {
 			//data_now  = new Date();
 			//data_week = nextweek(data_now);
 			//data_now  = data_now.getFullYear()  +"-"+ (data_now.getMonth()+1)  +"-"+ data_now.getDate();
 			//data_week = data_week.getFullYear() +"-"+ (data_week.getMonth()+1) +"-"+ data_week.getDate();
 			//console.log(data_now);
 			//console.log(data_week);
-			resp = await ask_elena('/v2/seasons/'+season_id+'/upcoming');
+			//resp = await ask_elena('/v2/seasons/'+season_id+'/upcoming');
+			resp = await ask_elena('/v2/fixtures?from=2022-09-03&to=2022-09-04');
 			//resp = require('./a.js').a();
 			console.log(resp.data);
 
@@ -156,7 +157,7 @@ try{
 			}
 			db.collection('messages').doc('messages').set({array_ids: array_ids});
 			console.log("finished sending matches' messages");
-		}
+		//}
 	});
 
 	scheduler.scheduleJob("*/20 * * * *", async ()=>{
@@ -299,6 +300,9 @@ client.on('interactionCreate', async interaction => {
 									bet_log: admin.firestore.FieldValue.arrayUnion(bb),
 									money:   admin.firestore.FieldValue.increment(-bb.bet_amount),
 									played:  admin.firestore.FieldValue.increment(1)
+								});
+								doc = await db.collection('bets').doc(bb.id_partita).set({
+									montepremi: admin.firestore.FieldValue.increment(bb.bet_amount)
 								});
 								interaction.followUp({content: "Confermato", ephemeral: eph});
 								console.log(bb.id_partita+" confirmed");
