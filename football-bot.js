@@ -74,7 +74,6 @@ async function update_money(match_id, home_sum, away_sum) { //update money
 				client.users.fetch(user_doc.id).send(`Hai vinto la scommessa con valore ${bet.bet_value} della partita con ID \`${bet.id_partita}\` del ${new Date(bet.timestamp).getTime() / 1000}, ti sono stati aggiunti ${bet.bet_amount} credit.`);
 			} else {
 				coll.doc(user_doc.id).update({
-					money: admin.firestore.FieldValue.increment(bet.bet_amount),
 					lost:  admin.firestore.FieldValue.increment(1)
 				});
 			}
@@ -102,8 +101,8 @@ try{
 			//data_week = data_week.getFullYear() +"-"+ (data_week.getMonth()+1) +"-"+ data_week.getDate();
 			//console.log(data_now);
 			//console.log(data_week);
-			//resp = await ask_elena('/v2/seasons/'+season_id+'/upcoming');
-			resp = await ask_elena('/v2/fixtures?from=2022-09-03&to=2022-09-04');
+			resp = await ask_elena('/v2/seasons/'+season_id+'/upcoming');
+			//resp = await ask_elena('/v2/fixtures?from=2022-09-03&to=2022-09-04');
 			//resp = require('./a.js').a();
 			console.log(resp.data);
 
@@ -300,9 +299,6 @@ client.on('interactionCreate', async interaction => {
 									bet_log: admin.firestore.FieldValue.arrayUnion(bb),
 									money:   admin.firestore.FieldValue.increment(-bb.bet_amount),
 									played:  admin.firestore.FieldValue.increment(1)
-								});
-								doc = await db.collection('bets').doc(bb.id_partita).set({
-									montepremi: admin.firestore.FieldValue.increment(bb.bet_amount)
 								});
 								interaction.followUp({content: "Confermato", ephemeral: eph});
 								console.log(bb.id_partita+" confirmed");
