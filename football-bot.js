@@ -78,12 +78,12 @@ async function update_money(match_id, home_sum, away_sum) { //update money
 						won:   admin.firestore.FieldValue.increment(1)
 					});
 				}
-				client.users.fetch(user_doc.id).send(`Hai vinto la scommessa con valore ${bet.bet_value} della partita con ID \`${bet.id_partita}\` del ${new Date(bet.timestamp).getTime() / 1000}, ti sono stati aggiunti ${bet.bet_amount} credit.`);
+				(await client.users.fetch(user_doc.id)).send(`Hai vinto la scommessa con valore ${bet.bet_value} della partita con ID \`${bet.id_partita}\` del ${new Date(bet.timestamp).getTime() / 1000}, ti sono stati aggiunti ${bet.bet_amount} credit.`);
 			} else {
 				coll.doc(user_doc.id).update({
 					lost:  admin.firestore.FieldValue.increment(1)
 				});
-				client.users.fetch(user_doc.id).send(`Hai perso la scommessa con valore ${bet.bet_value} della partita con ID \`${bet.id_partita}\` del ${new Date(bet.timestamp).getTime() / 1000}, non ti sono stati aggiunti credit. Riprova (o forse no, è meglio non giocare d'azzardo)`);
+				(await client.users.fetch(user_doc.id)).send(`Hai perso la scommessa con valore ${bet.bet_value} della partita con ID \`${bet.id_partita}\` del ${new Date(bet.timestamp).getTime() / 1000}, non ti sono stati aggiunti credit. Riprova (o forse no, è meglio non giocare d'azzardo)`);
 			}
 		}
 	}
