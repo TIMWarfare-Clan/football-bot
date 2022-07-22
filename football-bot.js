@@ -67,18 +67,21 @@ async function update_money(match_id, home_sum, away_sum) { //update money
 		console.log(b);
 		for(bet of b) {
 			if(bet.bet_value.includes(r)) {
+				var aumento = 1;
 				if(bet.bet_value.length == 2) {
+					aumento = bet.bet_amount*1.5;
 					coll.doc(user_doc.id).update({
-						money: admin.firestore.FieldValue.increment(bet.bet_amount*1.5),
+						money: admin.firestore.FieldValue.increment(aumento),
 						won:   admin.firestore.FieldValue.increment(1)
 					});
 				} else {
+					aumento = bet.bet_amount*2;
 					coll.doc(user_doc.id).update({
-						money: admin.firestore.FieldValue.increment(bet.bet_amount*2),
+						money: admin.firestore.FieldValue.increment(aumento),
 						won:   admin.firestore.FieldValue.increment(1)
 					});
 				}
-				(await client.users.fetch(user_doc.id)).send(`Hai vinto la scommessa con valore ${bet.bet_value} della partita con ID \`${bet.id_partita}\` del ${new Date(bet.timestamp).getTime() / 1000}, ti sono stati aggiunti ${bet.bet_amount} credit.`);
+				(await client.users.fetch(user_doc.id)).send(`Hai vinto la scommessa con valore ${bet.bet_value} della partita con ID \`${bet.id_partita}\` del ${new Date(bet.timestamp).getTime() / 1000}, ti sono stati aggiunti ${aumento} credit.`);
 			} else {
 				coll.doc(user_doc.id).update({
 					lost:  admin.firestore.FieldValue.increment(1)
