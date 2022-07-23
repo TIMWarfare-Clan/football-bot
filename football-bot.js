@@ -139,8 +139,12 @@ try{
 			cc = (await client.channels.fetch(id_channel));
 			for(const match of resp) {
 				img = await jimp.read('vs.jpg');
-				img_home = await jimp.read("https://cdn.elenasport.io/badges/150x150/"+match.idHome);
-				img_away = await jimp.read("https://cdn.elenasport.io/badges/150x150/"+match.idAway);
+				try{
+					img_home = await jimp.read("https://cdn.elenasport.io/badges/150x150/"+match.idHome);
+					img_away = await jimp.read("https://cdn.elenasport.io/badges/150x150/"+match.idAway);
+				}catch(e){
+					console.log('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+				}
 				await img.composite(img_home, 10, 105); //0, 360/2 - 150/2
 				await img.composite(img_away, 480, 105);
 				await img.writeAsync(match.idHome+"vs"+match.idAway+".jpg");
