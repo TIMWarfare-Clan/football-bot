@@ -121,23 +121,23 @@ try{
 	scheduler.scheduleJob({second: 0, minute: 0, hour: 6}, async ()=>{
 		to_delete();
 		console.log("start sending matches");
-		season_ids = (await db.collection('config').doc('seasons').get()).data().ids; //TODO: use league ids and get last season id (should be league.current_season, use https://football.elenasport.io/v2/leagues/league_id?expand=current_season)
+		league_ids = (await db.collection('config').doc('leagues').get()).data().ids; //DONE: //TODO: use league ids and get last league id (should be league.current_season, use https://football.elenasport.io/v2/leagues/league_id?expand=current_season)
 		array_ids = [];
-		for(const season_id of season_ids) {
+		for(const league_id of league_ids) {
 			//data_now  = new Date();
 			//data_week = nextweek(data_now);
 			//data_now  = data_now.getFullYear()  +"-"+ (data_now.getMonth()+1)  +"-"+ data_now.getDate();
 			//data_week = data_week.getFullYear() +"-"+ (data_week.getMonth()+1) +"-"+ data_week.getDate();
 			//console.log(data_now);
 			//console.log(data_week);
-			resp = await ask_elena('/v2/seasons/'+season_id+'/upcoming');
+			resp = (await ask_elena('/v2/leagues/'+league_id+'?expand=current_season.upcoming')).data.data[0].expand.current_season.expand.upcoming;
 			//resp = await ask_elena('/v2/fixtures?from=2022-09-03&to=2022-09-04');
 			//resp = await ask_elena('/v2/upcoming');
 			//resp = require('./a.js').a();
-			console.log(resp.data);
+			console.log(resp);
 
 			cc = (await client.channels.fetch(id_channel));
-			for(const match of resp.data.data) {
+			for(const match of resp) {
 				img = await jimp.read('vs.jpg');
 				img_home = await jimp.read("https://cdn.elenasport.io/badges/150x150/"+match.idHome);
 				img_away = await jimp.read("https://cdn.elenasport.io/badges/150x150/"+match.idAway);
@@ -175,7 +175,7 @@ try{
 					]
 				}
 				console.log(msg);
-				console.log(resp.data.data.length);
+				console.log(resp.length);
 				//(await client.channels.fetch('481512731569160224')).send(msg);
 				array_ids.push({
 					partita_id: match.id,
@@ -189,14 +189,20 @@ try{
 		}
 	});
 
-	scheduler.scheduleJob("*/20 * * * *", async ()=>{
+	scheduler.scheduleJob("0 */1 * * *", async ()=>{
 		console.log("start updating matches");
 		ids = (await db.collection('messages').doc('messages').get()).data().array_ids;
+		matches = [];
+		for(const league_id of league_ids) {
+			a = (await ask_elena('/v2/leagues/'+league_id+'?expand=current_season.upcoming')).data.data[0].expand.current_season.expand.upcoming;
+			matches.concat(a);
+		}
 		for(const matchy of ids) {
 			console.log(matchy);
 			if(new Date(matchy.data_partita) >= new Date()) continue; //if not yet started skip
-			await sleep(6000); //to avoid getting rate-limited (max 10/min)
-			match = (await ask_elena('/v2/fixtures/'+matchy.partita_id)).data.data[0];
+			//await sleep(6000); //to avoid getting rate-limited (max 10/min) //not needed anymore, we already get everything at line 183
+			//match = (await ask_elena('/v2/fixtures/'+matchy.partita_id)).data.data[0];
+			match = matches.filter(e => e.id == matchy.partita_id)[0];
 			//match = require('./a.js').a().data.data.filter(e => e.id == matchy.partita_id)[0];
 			console.log(match);
 			if(match.status == 'not started') continue; //shouldn't ever run, but just to be sure
