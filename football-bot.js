@@ -92,6 +92,23 @@ async function update_money(match_id, home_sum, away_sum) { //update money
 	}
 }
 
+async function to_delete() {
+	try{
+		doc = await db.collection('messages').doc('to_delete');
+		ids = (await doc.get()).data().array_ids;
+		id_channel = (await db.collection('config').doc('channel').get()).data().id;
+		console.log(ids)
+		for(const t of ids) {
+			msg_id = t.message_id;
+			cc = (await client.channels.fetch(id_channel));
+			a = (await cc.messages.fetch(msg_id)).delete().then(msg => {console.log(`Deleted match_message from ${msg.author.username} (id:${msg.author.id}) at ${new Date()}`)}).catch(console.error);
+			doc.update({
+				array_ids: admin.firestore.FieldValue.arrayRemove(t)
+			})
+		}
+	}catch(e){console.log(e)}
+}
+
 client.once('ready', async () => {
 try{
 	data_boot = new Date();
@@ -102,6 +119,7 @@ try{
 	);
 
 	scheduler.scheduleJob({second: 0, minute: 0, hour: 6}, async ()=>{
+		to_delete();
 		console.log("start sending matches");
 		season_ids = (await db.collection('config').doc('seasons').get()).data().ids; //TODO: use league ids and get last season id (should be league.current_season, use https://football.elenasport.io/v2/leagues/league_id?expand=current_season)
 		array_ids = [];
