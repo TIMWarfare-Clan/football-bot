@@ -18,6 +18,7 @@
     "firebase-admin": "^10.0.2",
     "jimp": "^0.16.1",
     "node-schedule": "^2.1.0",
-    "nodemon": "^2.0.15"
+    "nodemon": "^2.0.15",
+    "unb-api": "^1.2.3"
   }
 }

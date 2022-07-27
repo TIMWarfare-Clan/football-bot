@@ -13,6 +13,8 @@ const fs = require('fs');
 const admin = require('firebase-admin');
 const firebase = require(fn);
 const scheduler = require('node-schedule');
+const uu = require('unb-api');
+const unb = new uu.Client(endec.decode(process.env.tok_unb));
 var axios = require("axios").default;
 
 //global variables
@@ -310,6 +312,14 @@ client.on('interactionCreate', async interaction => {
 		console.log(id);
 		if(id != undefined) {
 			if(new Date(id.data_partita) >= new Date()) { //you can bet only if the match has not started yet
+				user_credits = (await unb.getUserBalance((await db.collection('config').doc('guild_unb').get()).data().timw, interaction.user.id)).cash;
+				console.log(user_credits);
+				if(!((await db.collection('users').doc(interaction.user.id).get()).exists)){
+					await db.collection('users').doc(interaction.user.id).set({
+						bet_log: [],
+						money: user_credits
+					});
+				}
 				doc = await db.collection('users').doc(interaction.user.id);
 				doc_data = (await doc.get()).data();
 				if(!doc_data.bet_log.some(e => e.id_partita == bb.id_partita)) {
