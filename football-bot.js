@@ -199,8 +199,10 @@ try{
 		console.log("start updating matches");
 		ids = (await db.collection('messages').doc('messages').get()).data().array_ids;
 		matches = [];
+		league_ids = (await db.collection('config').doc('leagues').get()).data().ids;
 		for(const league_id of league_ids) {
-			a = (await ask_elena('/v2/leagues/'+league_id+'?expand=current_season.upcoming')).data.data[0].expand.current_season.expand.upcoming;
+			a = (await ask_elena('/v2/leagues/'+league_id+'?expand=current_season.upcoming')).data.data[0].expand.current_season[0].expand.upcoming;
+			console.log(a);
 			matches.concat(a);
 		}
 		for(const matchy of ids) {
