@@ -130,7 +130,6 @@ async function to_delete() {
 }
 
 client.once('ready', async () => {
-try{
 	data_boot = new Date();
 	id_channel = (await db.collection('config').doc('channel').get()).data().id;
 	console.log(`Logged in as ${client.user.id} at ${data_boot}\n`+
@@ -155,85 +154,88 @@ try{
 			//data_week = data_week.getFullYear() +"-"+ (data_week.getMonth()+1) +"-"+ data_week.getDate();
 			//console.log(data_now);
 			//console.log(data_week);
-			resp = (await ask_elena('/v2/leagues/'+league_id+'?expand=current_season.upcoming')).data.data[0].expand.current_season.expand.upcoming;
+			resp = (await ask_elena('/v2/leagues/'+league_id+'?expand=current_season.upcoming')).data.data[0].expand.current_season[0].expand.upcoming;
 			//resp = await ask_elena('/v2/fixtures?from=2022-09-03&to=2022-09-04');
 			//resp = await ask_elena('/v2/upcoming');
 			//resp = require('./a.js').a();
 			console.log(resp);
 
 			cc = (await client.channels.fetch(id_channel));
-			for(const match of resp) {
-				img = await jimp.read('vs.jpg');
-				try{
-					img_home = await jimp.read("https://cdn.elenasport.io/badges/150x150/"+match.idHome);
-					img_away = await jimp.read("https://cdn.elenasport.io/badges/150x150/"+match.idAway);
-				}catch(e){
-					console.log('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
-				}
-				await img.composite(img_home, 10, 105); //0, 360/2 - 150/2
-				await img.composite(img_away, 480, 105);
-				await img.writeAsync(match.idHome+"vs"+match.idAway+".jpg");
-				msg = {
-					embeds: [
-						{
-							"title": match.leagueName,
-							"description": `Il **<t:${new Date(match.date).getTime() / 1000}>** giocheranno **${match.homeName} (in casa)** contro **${match.awayName} (in trasferta)**`,
-							//"url": "https://elenasport-io1.p.rapidapi.com", //TODO: add link to everything and to this
-							"color": 9532993,
-							"timestamp": new Date(),
-							"image": {
-								"url": "attachment://vs.jpg",
-							},
-							"fields": [
-								{
-									"name": "Per scommettere usa (il messaggio non verrà visto dagli altri utenti):",
-									"value": "`/bet`, con `id` `"+match.id+"`"
+			try{
+				for(const match of resp) {
+					img = await jimp.read('vs.jpg');
+					try{
+						img_home = await jimp.read("https://cdn.elenasport.io/badges/150x150/"+match.idHome);
+						img_away = await jimp.read("https://cdn.elenasport.io/badges/150x150/"+match.idAway);
+					}catch(e){
+						console.log('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+					}
+					await img.composite(img_home, 10, 105); //0, 360/2 - 150/2
+					await img.composite(img_away, 480, 105);
+					await img.writeAsync(match.idHome+"vs"+match.idAway+".jpg");
+					msg = {
+						embeds: [
+							{
+								"title": match.leagueName,
+								"description": `Il **<t:${new Date(match.date).getTime() / 1000}>** giocheranno **${match.homeName} (in casa)** contro **${match.awayName} (in trasferta)**`,
+								//"url": "https://elenasport-io1.p.rapidapi.com", //TODO: add link to everything and to this
+								"color": 9532993,
+								"timestamp": new Date(),
+								"image": {
+									"url": "attachment://vs.jpg",
 								},
-								{
-									"name": "Per vedere il tuo bilancio attuale usa:",
-									"value": "`/money`"
-								}
-							]
-						}
-					],
-					files: [
-						{
-							"attachment": match.idHome+"vs"+match.idAway+".jpg",
-							"name": "vs.jpg"
-						}
-					]
+								"fields": [
+									{
+										"name": "Per scommettere usa (il messaggio non verrà visto dagli altri utenti):",
+										"value": "`/bet`, con `id` `"+match.id+"`"
+									},
+									{
+										"name": "Per vedere il tuo bilancio attuale usa:",
+										"value": "`/money`"
+									}
+								]
+							}
+						],
+						files: [
+							{
+								"attachment": match.idHome+"vs"+match.idAway+".jpg",
+								"name": "vs.jpg"
+							}
+						]
+					}
+					console.log(msg);
+					console.log(resp.length);
+					//(await client.channels.fetch('481512731569160224')).send(msg);
+					array_ids.push({
+						partita_id: match.id,
+						data_partita: new Date(match.date).toISOString(),
+						message_id: (await cc.send(msg)).id
+					});
+					console.log(array_ids,array_ids.length);
 				}
-				console.log(msg);
-				console.log(resp.length);
-				//(await client.channels.fetch('481512731569160224')).send(msg);
-				array_ids.push({
-					partita_id: match.id,
-					data_partita: new Date(match.date).toISOString(),
-					message_id: (await cc.send(msg)).id
-				});
-				console.log(array_ids,array_ids.length);
-			}
 			db.collection('messages').doc('messages').set({array_ids: array_ids});
-			console.log("finished sending matches' messages");
+			console.log("finished sending matches' messages for "+league_id);
+			}catch(e){console.log(e)}
 		}
 	});
 
 	scheduler.scheduleJob("0 */1 * * *", async ()=>{
 		console.log("start updating matches");
 		ids = (await db.collection('messages').doc('messages').get()).data().array_ids;
-		matches = [];
-		league_ids = (await db.collection('config').doc('leagues').get()).data().ids;
-		for(const league_id of league_ids) {
-			a = (await ask_elena('/v2/leagues/'+league_id+'?expand=current_season.upcoming')).data.data[0].expand.current_season[0].expand.upcoming;
-			console.log(a);
-			matches.concat(a);
-		}
+		to_del = (await db.collection('messages').doc('to_delete').get()).data().array_ids;
+		//var matches = [];
+		//league_ids = (await db.collection('config').doc('leagues').get()).data().ids;
+		//for(const league_id of league_ids) {
+		//	a = (await ask_elena('/v2/leagues/'+league_id+'?expand=current_season.upcoming')).data.data[0].expand.current_season[0].expand.upcoming;
+		//	console.log(a);
+		//	if(a != null) matches = matches.concat(a);
+		//}
 		for(const matchy of ids) {
 			console.log(matchy);
-			if(new Date(matchy.data_partita) >= new Date()) continue; //if not yet started skip
-			//await sleep(6000); //to avoid getting rate-limited (max 10/min) //not needed anymore, we already get everything at line 183
-			//match = (await ask_elena('/v2/fixtures/'+matchy.partita_id)).data.data[0];
-			match = matches.filter(e => e.id == matchy.partita_id)[0];
+			if(new Date(matchy.data_partita) >= new Date() || to_del.some(e => e.id == matchy.partita_id)) continue; //if not yet started OR has already finished (is in to_delete array) skip
+			await sleep(6000); //to avoid getting rate-limited (max 10/min) //not needed anymore, we already get everything at line 183
+			match = (await ask_elena('/v2/fixtures/'+matchy.partita_id)).data.data[0];
+			//match = matches.filter(e => e.id == matchy.partita_id)[0];
 			//match = require('./a.js').a().data.data.filter(e => e.id == matchy.partita_id)[0];
 			console.log(match);
 			if(match.status == 'not started') continue; //shouldn't ever run, but just to be sure
@@ -308,7 +310,6 @@ try{
 			(await (await client.channels.fetch(id_channel)).messages.fetch(matchy.message_id)).edit(msg);
 		}
 	});
-}catch(e){console.log(e)}
 });
 
 client.on('messageCreate', async (message) => {
