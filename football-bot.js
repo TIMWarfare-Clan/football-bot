@@ -18,7 +18,8 @@ const unb = new uu.Client(endec.decode(process.env.tok_unb));
 var axios = require("axios").default;
 
 //global variables
-const currency_name = "credit (1 credit = 1 <:shadowsdesign:893222216966225960>)";
+//const currency_name = "credit (1 credit = 1 <:shadowsdesign:893222216966225960>)";
+const currency_name = "<:shadowsdesign:893222216966225960>";
 const default_values = {
 	money: 0,
 	played: 0,
@@ -70,20 +71,37 @@ async function update_money(match_id, home_sum, away_sum) { //update money
 		for(bet of b) {
 			if(bet.bet_value.includes(r)) {
 				var aumento = 1;
+				//TODO: not use firestore for guild id (that way other guilds can also be supported)
 				if(bet.bet_value.length == 2) {
 					aumento = bet.bet_amount*1.5;
+					await unb.editUserBalance(
+						(await db.collection('config').doc('guild_unb').get()).data().timw, user_doc.id,
+						{
+							cash: aumento,
+							bank: 0
+						},
+						`bet id:${bb.id_partita} vinta, aggiunti ${aumento} unb currency`
+					)
 					coll.doc(user_doc.id).update({
-						money: admin.firestore.FieldValue.increment(aumento),
-						won:   admin.firestore.FieldValue.increment(1)
+						won:   admin.firestore.FieldValue.increment(1)//,
+						//money: admin.firestore.FieldValue.increment(aumento)
 					});
 				} else {
 					aumento = bet.bet_amount*2;
+					await unb.editUserBalance(
+						(await db.collection('config').doc('guild_unb').get()).data().timw, user_doc.id,
+						{
+							cash: aumento,
+							bank: 0
+						},
+						`bet id:${bb.id_partita} vinta, aggiunti ${aumento} unb currency`
+					)
 					coll.doc(user_doc.id).update({
-						money: admin.firestore.FieldValue.increment(aumento),
-						won:   admin.firestore.FieldValue.increment(1)
+						won:   admin.firestore.FieldValue.increment(1)//,
+						//money: admin.firestore.FieldValue.increment(aumento)
 					});
 				}
-				(await client.users.fetch(user_doc.id)).send(`Hai vinto la scommessa con valore ${bet.bet_value} della partita con ID \`${bet.id_partita}\` del ${new Date(bet.timestamp).getTime() / 1000}, ti sono stati aggiunti ${aumento} credit.`);
+				(await client.users.fetch(user_doc.id)).send(`Hai vinto la scommessa con valore ${bet.bet_value} della partita con ID \`${bet.id_partita}\` del ${new Date(bet.timestamp).getTime() / 1000}, ti sono stati aggiunti ${aumento} ${currency_name}.`);
 			} else {
 				coll.doc(user_doc.id).update({
 					lost:  admin.firestore.FieldValue.increment(1)
@@ -119,6 +137,11 @@ try{
 		    `prefix: ${p}\n`+
 		    `id_channel: ${id_channel}`
 	);
+
+	//b = await unb.editUserBalance((await db.collection('config').doc('guild_unb').get()).data().timw, '295941261141999617', { cash: -300, bank: 0 }, "yes");
+	//b = await unb.setUserBalance((await db.collection('config').doc('guild_unb').get()).data().timw, '295941261141999617', { cash: 120, bank: 870 }, "yes");
+	//console.log(b);
+	//(await client.users.fetch('295941261141999617')).send(currency_name);
 
 	scheduler.scheduleJob({second: 0, minute: 0, hour: 6}, async ()=>{
 		to_delete();
@@ -314,18 +337,19 @@ client.on('interactionCreate', async interaction => {
 		console.log(id);
 		if(id != undefined) {
 			if(new Date(id.data_partita) >= new Date()) { //you can bet only if the match has not started yet
-				user_credits = (await unb.getUserBalance((await db.collection('config').doc('guild_unb').get()).data().timw, interaction.user.id)).cash;
-				console.log(user_credits);
+				usable_money = (await unb.getUserBalance(interaction.guild.id, interaction.user.id)).cash;
+				console.log(usable_money);
 				if(!((await db.collection('users').doc(interaction.user.id).get()).exists)){
 					await db.collection('users').doc(interaction.user.id).set({
-						bet_log: [],
-						money: user_credits
+						bet_log: []//,
+						//money: user_credits
 					});
 				}
 				doc = await db.collection('users').doc(interaction.user.id);
 				doc_data = (await doc.get()).data();
+				//usable_money = doc_data.money;
 				if(!doc_data.bet_log.some(e => e.id_partita == bb.id_partita)) {
-					if(doc_data.money >= bb.bet_amount) {
+					if(usable_money >= bb.bet_amount) {
 						interaction.reply({
 							content: `Bet registrata:\n`+
 								 `Scommessa: ${bb.bet_value}\n`+
@@ -349,9 +373,12 @@ client.on('interactionCreate', async interaction => {
 								await doc.set({yes:0}, {merge: true})
 								doc.update({
 									bet_log: admin.firestore.FieldValue.arrayUnion(bb),
-									money:   admin.firestore.FieldValue.increment(-bb.bet_amount),
+									//money:   admin.firestore.FieldValue.increment(-bb.bet_amount),
 									played:  admin.firestore.FieldValue.increment(1)
 								});
+
+								await unb.editUserBalance(interaction.guild.id, interaction.user.id, { cash: -bb.bet_amount, bank: 0 }, `bet id:${bb.id_partita}`)
+
 								interaction.followUp({content: "Confermato", ephemeral: eph});
 								console.log(bb.id_partita+" confirmed");
 							}else if(confirm_message.content == 'annulla') {
@@ -367,7 +394,7 @@ client.on('interactionCreate', async interaction => {
 						});
 					} else {
 						interaction.reply({
-							content:  `Non hai abbastanza credit, ne hai solo ${doc_data.money}\n`,
+							content:  `Non hai abbastanza ${currency_name}, ne hai solo ${usable_money}\n`,
 							ephemeral: eph
 						});
 					}
