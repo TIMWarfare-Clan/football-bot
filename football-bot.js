@@ -371,7 +371,7 @@ client.on('interactionCreate', async interaction => {
 						}
 						const collector = interaction.channel.createMessageCollector({filter, time: SECONDS_TO_REPLY * 1000, max: MESSAGES_TO_COLLECT})
 						collector.on('collect', async confirm_message => {
-							if(confirm_message.content == 'giusto') {
+							if(confirm_message.content.toLowerCase() == 'giusto') {
 								confirm_message.delete().then(msg => {console.log(`Deleted confirm_message from ${msg.author.username} (id:${msg.author.id}) at ${new Date()}`)}).catch(console.error);
 								await doc.set({yes:0}, {merge: true})
 								doc.update({
@@ -384,7 +384,7 @@ client.on('interactionCreate', async interaction => {
 
 								interaction.followUp({content: "Confermato", ephemeral: eph});
 								console.log(bb.id_partita+" confirmed");
-							}else if(confirm_message.content == 'annulla') {
+							}else if(confirm_message.content.toLowerCase() == 'annulla') {
 								interaction.followUp({content: "Annullato", ephemeral: eph});
 								console.log(bb.id_partita+" canceled");
 							}
