@@ -113,6 +113,7 @@ async function update_money(match_id, home_sum, away_sum) { //update money
 }
 
 async function to_delete() {
+	console.log("delete");
 	try{
 		doc = await db.collection('messages').doc('to_delete');
 		ids = (await doc.get()).data().array_ids;
@@ -127,6 +128,7 @@ async function to_delete() {
 			})
 		}
 	}catch(e){console.log(e)}
+	console.log("finito delete");
 }
 
 client.once('ready', async () => {
@@ -365,7 +367,7 @@ client.on('interactionCreate', async interaction => {
 						const SECONDS_TO_REPLY = 120;
 						const MESSAGES_TO_COLLECT = 1;
 						const filter = (m) => {
-							return m.author.id == interaction.user.id && (m.content == 'giusto' || m.content == 'annulla')
+							return m.author.id == interaction.user.id && (m.content.toLowerCase() == 'giusto' || m.content.toLowerCase() == 'annulla')
 						}
 						const collector = interaction.channel.createMessageCollector({filter, time: SECONDS_TO_REPLY * 1000, max: MESSAGES_TO_COLLECT})
 						collector.on('collect', async confirm_message => {
