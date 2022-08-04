@@ -80,7 +80,7 @@ async function update_money(match_id, home_sum, away_sum) { //update money
 							cash: aumento,
 							bank: 0
 						},
-						`bet id:${bb.id_partita} vinta, aggiunti ${aumento} unb currency`
+						`bet id:${bet.id_partita} vinta, aggiunti ${aumento} unb currency`
 					)
 					coll.doc(user_doc.id).update({
 						won:   admin.firestore.FieldValue.increment(1)//,
@@ -94,7 +94,7 @@ async function update_money(match_id, home_sum, away_sum) { //update money
 							cash: aumento,
 							bank: 0
 						},
-						`bet id:${bb.id_partita} vinta, aggiunti ${aumento} unb currency`
+						`bet id:${bet.id_partita} vinta, aggiunti ${aumento} unb currency`
 					)
 					coll.doc(user_doc.id).update({
 						won:   admin.firestore.FieldValue.increment(1)//,
