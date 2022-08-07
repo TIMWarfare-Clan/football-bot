@@ -101,12 +101,12 @@ async function update_money(match_id, home_sum, away_sum) { //update money
 						//money: admin.firestore.FieldValue.increment(aumento)
 					});
 				}
-				(await client.users.fetch(user_doc.id)).send(`Hai vinto la scommessa con valore ${bet.bet_value} della partita con ID \`${bet.id_partita}\` del <t:${new Date(bet.timestamp).getTime()}>, ti sono stati aggiunti ${aumento} ${currency_name}.`);
+				(await client.users.fetch(user_doc.id)).send(`Hai vinto la scommessa con valore ${bet.bet_value} della partita con ID \`${bet.id_partita}\` del <t:${Math.floor(new Date(bet.timestamp).getTime() / 1000)}>, ti sono stati aggiunti ${aumento} ${currency_name}.`);
 			} else {
 				coll.doc(user_doc.id).update({
 					lost:  admin.firestore.FieldValue.increment(1)
 				});
-				(await client.users.fetch(user_doc.id)).send(`Hai perso la scommessa con valore ${bet.bet_value} della partita con ID \`${bet.id_partita}\` del <t:${new Date(bet.timestamp).getTime()}>, non ti sono stati aggiunti credit. Riprova (o forse no, è meglio non giocare d'azzardo)`);
+				(await client.users.fetch(user_doc.id)).send(`Hai perso la scommessa con valore ${bet.bet_value} della partita con ID \`${bet.id_partita}\` del <t:${Math.floor(new Date(bet.timestamp).getTime() / 1000)}>, non ti sono stati aggiunti credit. Riprova (o forse no, è meglio non giocare d'azzardo)`);
 			}
 		}
 	}
@@ -294,6 +294,7 @@ client.once('ready', async () => {
 				ards = (await db.collection('messages').doc('messages').get()).data().array_ids;
 				ar  = ards.filter(e => e.partita_id != match.id);
 				art = ards.filter(e => e.partita_id == match.id);
+				console.log("ar:",ar,"art:",art);
 				db.collection('messages').doc('messages').set({array_ids: ar});
 				db.collection('messages').doc('to_delete').update({
 					array_ids: admin.firestore.FieldValue.arrayUnion(...art) //spread operator ES6
