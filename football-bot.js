@@ -298,13 +298,15 @@ client.once('ready', async () => {
 				);
 				update_money(match.id, home_sum, home_sum);
 				ards = (await db.collection('messages').doc('messages').get()).data().array_ids;
-				ar  = ards.filter(e => e.partita_id != match.id);
-				art = ards.filter(e => e.partita_id == match.id);
-				console.log("ar:",ar,"art:",art);
-				db.collection('messages').doc('messages').set({array_ids: ar});
-				db.collection('messages').doc('to_delete').update({
-					array_ids: admin.firestore.FieldValue.arrayUnion(...art) //spread operator ES6
-				});
+				try {
+					ar  = ards.filter(e => e.partita_id != match.id);
+					art = ards.filter(e => e.partita_id == match.id);
+					console.log("ar:",ar,"art:",art);
+					db.collection('messages').doc('messages').set({array_ids: ar});
+					db.collection('messages').doc('to_delete').update({
+						array_ids: admin.firestore.FieldValue.arrayUnion(...art) //spread operator ES6
+					});
+				}catch(e){console.log(e)}
 				console.log(`${match.id} removed from messages and added to to_delete`);
 			}
 			else if(match.status == 'cancelled') {
@@ -316,7 +318,9 @@ client.once('ready', async () => {
 				msg.embeds[0].color = 9532993;
 			}
 			console.log(msg);
-			(await (await client.channels.fetch(id_channel)).messages.fetch(matchy.message_id)).edit(msg);
+			try {
+				(await (await client.channels.fetch(id_channel)).messages.fetch(matchy.message_id)).edit(msg);
+			}catch(e){console.log(e)}
 		}
 	});
 });
