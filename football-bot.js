@@ -168,9 +168,15 @@ client.once('ready', async () => {
 					img = await jimp.read('vs.jpg');
 					try{
 						img_home = await jimp.read("https://cdn.elenasport.io/badges/150x150/"+match.idHome);
+					}catch(e){
+						console.log('no_logo home');
+						img_home = await jimp.read("./no_logo.png");
+					}
+					try{
 						img_away = await jimp.read("https://cdn.elenasport.io/badges/150x150/"+match.idAway);
 					}catch(e){
-						console.log('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+						console.log('no_logo away');
+						img_away = await jimp.read("./no_logo.png");
 					}
 					await img.composite(img_home, 10, 105); //0, 360/2 - 150/2
 					await img.composite(img_away, 480, 105);
@@ -205,7 +211,7 @@ client.once('ready', async () => {
 							}
 						]
 					}
-					console.log(msg);
+					console.dir(msg,{depth:null});
 					console.log(resp.length);
 					//(await client.channels.fetch('481512731569160224')).send(msg);
 					array_ids.push({
