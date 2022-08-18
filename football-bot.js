@@ -73,7 +73,7 @@ async function update_money(match_id, home_sum, away_sum) { //update money
 				var aumento = 1;
 				//TODO: not use firestore for guild id (that way other guilds can also be supported)
 				if(bet.bet_value.length == 2) {
-					aumento = bet.bet_amount*1.5;
+					aumento = Math.floor(bet.bet_amount*1.5);
 					await unb.editUserBalance(
 						(await db.collection('config').doc('guild_unb').get()).data().timw, user_doc.id,
 						{
@@ -87,7 +87,7 @@ async function update_money(match_id, home_sum, away_sum) { //update money
 						//money: admin.firestore.FieldValue.increment(aumento)
 					});
 				} else {
-					aumento = bet.bet_amount*2;
+					aumento = Math.floor(bet.bet_amount*2);
 					await unb.editUserBalance(
 						(await db.collection('config').doc('guild_unb').get()).data().timw, user_doc.id,
 						{
