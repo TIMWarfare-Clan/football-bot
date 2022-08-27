@@ -26,6 +26,7 @@ const default_values = {
 	won: 0
 }
 var id_channel = '964875578127810601';
+const see_money_command = "`!money`";
 
 const client = new Client({
 	intents: ["GUILDS", "GUILD_MESSAGES"]
@@ -220,7 +221,7 @@ client.once('ready', async () => {
 									},
 									{
 										"name": "Per vedere il tuo bilancio attuale usa:",
-										"value": "`/money`"
+										"value": see_money_command
 									}
 								]
 							}
@@ -286,7 +287,7 @@ client.once('ready', async () => {
 							},
 							{
 								"name": "Per vedere il tuo bilancio attuale usa:",
-								"value": "`/money`"
+								"value": see_money_command
 							}
 						]
 					}
