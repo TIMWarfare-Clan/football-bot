@@ -132,6 +132,27 @@ async function to_delete() {
 }
 
 client.once('ready', async () => {
+	// backup whole db
+	collections = await db.listCollections();
+	file = "./bck_firestore";
+	fs.writeFileSync(file,`//Backup Cloud Firestore ${new Date()}\n\n`);
+	for (let collection of collections) {
+		//console.log(`"${collection.id}" :`);
+		fs.appendFileSync(file,`"${collection.id}" : {\n`);
+		map = await collection.get();
+		docs = map.docs;
+		docs.map(doc => {
+				fs.appendFileSync(file,`"${doc.id}"`)
+				fs.appendFileSync(file," : ")
+				fs.appendFileSync(file,JSON.stringify(doc.data(), null, '\t'))
+				fs.appendFileSync(file,",\n");
+			}
+		)
+		fs.appendFileSync(file,"\n},\n\n");
+	}
+	console.log("Firestore Backup finished");
+
+
 	data_boot = new Date();
 	id_channel = (await db.collection('config').doc('channel').get()).data().id;
 	console.log(`Logged in as ${client.user.id} at ${data_boot}\n`+
