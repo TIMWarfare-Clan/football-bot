@@ -36,15 +36,17 @@ admin.initializeApp({
 });
 const db = admin.firestore();
 
-async function ask_elena(endpoint) {
+async function ask_api(endpoint) {
+	// api_documentation = https://www.api-football.com/documentation-v3
 	options = {
 		method: 'GET',
-		url: 'https://elenasport-io1.p.rapidapi.com'+endpoint,
+		url: 'https://v3.football.api-sports.io'+endpoint,
 		headers: {
-			'X-RapidAPI-Host': 'elenasport-io1.p.rapidapi.com',
-			'X-RapidAPI-Key': endec.decode(process.env.es_api_key)
+			'x-rapidapi-host': 'v3.football.api-sports.io',
+			'x-rapidapi-key': endec.decode(process.env.es_api_key)
 		}
 	};
+	//console.log(options);
 
 	return await axios.request(options)
 }
@@ -172,43 +174,63 @@ client.once('ready', async () => {
 		league_ids = (await db.collection('config').doc('leagues').get()).data().ids; //DONE: //TODO: use league ids and get last league id (should be league.current_season, use https://football.elenasport.io/v2/leagues/league_id?expand=current_season)
 		array_ids = [];
 		for(const league_id of league_ids) {
+			console.log(league_id);
 			//data_now  = new Date();
 			//data_week = nextweek(data_now);
 			//data_now  = data_now.getFullYear()  +"-"+ (data_now.getMonth()+1)  +"-"+ data_now.getDate();
 			//data_week = data_week.getFullYear() +"-"+ (data_week.getMonth()+1) +"-"+ data_week.getDate();
 			//console.log(data_now);
 			//console.log(data_week);
-			resp = (await ask_elena('/v2/leagues/'+league_id+'?expand=current_season.upcoming')).data.data[0].expand.current_season[0].expand.upcoming;
-			//resp = await ask_elena('/v2/fixtures?from=2022-09-03&to=2022-09-04');
-			//resp = await ask_elena('/v2/upcoming');
+			//tomorrow = new Date();
+			//tomorrow.setDate(tomorrow.getDate()+1);
+
+			today = new Date();
+			today_yyyymmdd = today.toISOString().split('T')[0];
+			console.log(today);
+			resp = (await ask_api('/fixtures?league='+league_id+'&season='+today.getUTCFullYear()+'&from='+today_yyyymmdd+'&to='+today_yyyymmdd)).data.response;
+
+			//resp = await ask_api('/v2/fixtures?from=2022-09-03&to=2022-09-04');
+			//resp = await ask_api('/v2/upcoming');
 			//resp = require('./a.js').a();
 			console.log(resp);
 
 			cc = (await client.channels.fetch(id_channel));
 			try{
 				for(const match of resp) {
+
+					// so I can switch api quickier
+					match_date 	= match.fixture.date;
+					match_timestamp = match.fixture.timestamp;
+					match_id 	= match.fixture.id;
+					league_name 	= match.league.name;
+					home_id 	= match.teams.home.id;
+					away_id 	= match.teams.away.id;
+					home_name 	= match.teams.home.name;
+					away_name 	= match.teams.away.name;
+
 					img = await jimp.read('vs.jpg');
 					try{
-						img_home = await jimp.read("https://cdn.elenasport.io/badges/150x150/"+match.idHome);
+						img_home = await jimp.read(match.teams.home.logo);
 					}catch(e){
 						console.log('no_logo home');
 						img_home = await jimp.read("./no_logo.png");
 					}
 					try{
-						img_away = await jimp.read("https://cdn.elenasport.io/badges/150x150/"+match.idAway);
+						img_away = await jimp.read(match.teams.away.logo);
 					}catch(e){
 						console.log('no_logo away');
 						img_away = await jimp.read("./no_logo.png");
 					}
 					await img.composite(img_home, 10, 105); //0, 360/2 - 150/2
 					await img.composite(img_away, 480, 105);
-					await img.writeAsync(match.idHome+"vs"+match.idAway+".jpg");
+					image_filename = home_id +"vs"+ away_id +".jpg";
+					await img.writeAsync(image_filename);
 					msg = {
 						embeds: [
 							{
-								"title": match.leagueName,
-								"description": `Il **<t:${new Date(match.date).getTime() / 1000}>** giocheranno **${match.homeName} (in casa)** contro **${match.awayName} (in trasferta)**`,
-								//"url": "https://elenasport-io1.p.rapidapi.com", //TODO: add link to everything and to this
+								"title": league_name,
+								"description": `Il **<t:${match_timestamp}>** giocheranno **${home_name} (in casa)** contro **${away_name} (in trasferta)**`,
+								//"url": "", //TODO: add link to everything and to this
 								"color": 9532993,
 								"timestamp": new Date(),
 								"image": {
@@ -217,7 +239,7 @@ client.once('ready', async () => {
 								"fields": [
 									{
 										"name": "Per scommettere usa (il messaggio non verrà visto dagli altri utenti):",
-										"value": "`/bet`, con `id` `"+match.id+"`"
+										"value": "`/bet`, con `id` `"+match_id+"`"
 									},
 									{
 										"name": "Per vedere il tuo bilancio attuale usa:",
@@ -228,7 +250,7 @@ client.once('ready', async () => {
 						],
 						files: [
 							{
-								"attachment": match.idHome+"vs"+match.idAway+".jpg",
+								"attachment": image_filename,
 								"name": "vs.jpg"
 							}
 						]
@@ -237,8 +259,8 @@ client.once('ready', async () => {
 					console.log(resp.length);
 					//(await client.channels.fetch('481512731569160224')).send(msg);
 					array_ids.push({
-						partita_id: match.id,
-						data_partita: new Date(match.date).toISOString(),
+						partita_id: match_id,
+						data_partita: new Date(match_date).toISOString(),
 						message_id: (await cc.send(msg)).id
 					});
 					console.log(array_ids,array_ids.length);
@@ -256,7 +278,7 @@ client.once('ready', async () => {
 		//var matches = [];
 		//league_ids = (await db.collection('config').doc('leagues').get()).data().ids;
 		//for(const league_id of league_ids) {
-		//	a = (await ask_elena('/v2/leagues/'+league_id+'?expand=current_season.upcoming')).data.data[0].expand.current_season[0].expand.upcoming;
+		//	a = (await ask_api('/v2/leagues/'+league_id+'?expand=current_season.upcoming')).data.data[0].expand.current_season[0].expand.upcoming;
 		//	console.log(a);
 		//	if(a != null) matches = matches.concat(a);
 		//}
@@ -264,17 +286,28 @@ client.once('ready', async () => {
 			console.log(matchy);
 			if(new Date(matchy.data_partita) >= new Date() || to_del.some(e => e.id == matchy.partita_id)) continue; //if not yet started OR has already finished (is in to_delete array) skip
 			await sleep(6000); //to avoid getting rate-limited (max 10/min) //not needed anymore, we already get everything at line 183
-			match = (await ask_elena('/v2/fixtures/'+matchy.partita_id)).data.data[0];
+			match = (await ask_api('/fixtures?id='+matchy.partita_id)).response;
 			//match = matches.filter(e => e.id == matchy.partita_id)[0];
 			//match = require('./a.js').a().data.data.filter(e => e.id == matchy.partita_id)[0];
 			console.log(match);
-			if(match.status == 'not started') continue; //shouldn't ever run, but just to be sure
+			if(match.fixture.status.short == 'NS') continue; //shouldn't ever run, but just to be sure //NS = not started
+
+			// so I can switch api quickier
+			match_timestamp = match.timestamp;
+			match_id 	= match.fixture.id;
+			league_name 	= match.league.name;
+			home_sum 	= match.goals.home;
+			away_sum 	= match.goals.away;
+			home_name 	= match.teams.home.name;
+			away_name 	= match.teams.away.name;
+			status_short 	= match.fixture.status.short;
+
 			msg = {
 				embeds: [
 					{
-						"title": match.leagueName,
+						"title": league_name,
 						"description": "",
-						//"url": "https://elenasport-io1.p.rapidapi.com", //TODO: add link to everything and to this
+						//"url": "", //TODO: add link to everything and to this
 						"color": 0,
 						"timestamp": new Date(),
 						"image": {
@@ -283,7 +316,7 @@ client.once('ready', async () => {
 						"fields": [
 							{
 								"name": "ID Partita:",
-								"value": "`"+match.id+"`"
+								"value": "`"+ match_id +"`"
 							},
 							{
 								"name": "Per vedere il tuo bilancio attuale usa:",
@@ -293,50 +326,48 @@ client.once('ready', async () => {
 					}
 				],
 			}
-			home_sum = match.team_home_90min_goals + match.team_home_ET_goals + match.team_home_PEN_goals;
-			away_sum = match.team_away_90min_goals + match.team_away_ET_goals + match.team_away_PEN_goals;
-			if(match.status == 'in progress') {
-				msg.embeds[0].description = `La partita del **<t:${new Date(match.date).getTime() / 1000}>**, giocata da **${match.homeName} (in casa)** contro **${match.awayName} (in trasferta)**, è in corso.`
+			if(status_short == 'LIVE') { //in progress
+				msg.embeds[0].description = `La partita del **<t:${match_timestamp}>**, giocata da **${home_name} (in casa)** contro **${away_name} (in trasferta)**, è in corso.`
 				msg.embeds[0].color = 9532993;
 				msg.embeds[0].fields.splice(0, 0, {
 					"name": "Punteggi:",
-					"value": `*${match.homeName}*: ${home_sum}\n*${match.awayName}*: ${away_sum}`
+					"value": `*${home_name}*: ${home_sum}\n*${away_name}*: ${away_sum}`
 				});
 			}
-			else if(match.status == 'finished') {
-				msg.embeds[0].description = `La partita del **<t:${new Date(match.date).getTime() / 1000}>**, giocata da **${match.homeName} (in casa)** contro **${match.awayName} (in trasferta)**, è finita.\nLe ricompense delle scommesse sono state accreditate ed è stata inviata una notifica nei messaggi privati a chi a scommesso.`;
+			else if(status_short == 'FT') { //finished
+				msg.embeds[0].description = `La partita del **<t:${match_timestamp}>**, giocata da **${home_name} (in casa)** contro **${away_name} (in trasferta)**, è finita.\nLe ricompense delle scommesse sono state accreditate ed è stata inviata una notifica nei messaggi privati a chi a scommesso.`;
 				msg.embeds[0].color = 9532993;
 				msg.embeds[0].fields.splice(0, 0,
 					{
-						"name": `__${match.homeName}__:`,
+						"name": `__${home_name}__:`,
 						"value": `**${home_sum}**`,
 						"inline": true
 					},
 					{
-						"name": `__${match.awayName}__:`,
+						"name": `__${away_name}__:`,
 						"value": `**${away_sum}**`,
 						"inline": true
 					}
 				);
-				update_money(match.id, home_sum, home_sum);
+				update_money(match_id, home_sum, home_sum);
 				ards = (await db.collection('messages').doc('messages').get()).data().array_ids;
 				try {
-					ar  = ards.filter(e => e.partita_id != match.id);
-					art = ards.filter(e => e.partita_id == match.id);
+					ar  = ards.filter(e => e.partita_id != match_id);
+					art = ards.filter(e => e.partita_id == match_id);
 					console.log("ar:",ar,"art:",art);
 					db.collection('messages').doc('messages').set({array_ids: ar});
 					db.collection('messages').doc('to_delete').update({
 						array_ids: admin.firestore.FieldValue.arrayUnion(...art) //spread operator ES6
 					});
 				}catch(e){console.log(e)}
-				console.log(`${match.id} removed from messages and added to to_delete`);
+				console.log(`${match_id} removed from messages and added to to_delete`);
 			}
-			else if(match.status == 'cancelled') {
-				msg.embeds[0].description = `La partita del **<t:${new Date(match.date).getTime() / 1000}>**, giocata da **${match.homeName} (in casa)** contro **${match.awayName} (in trasferta)**, è stata annullata.`;
+			else if(status_short == 'CANC') { //cancelled
+				msg.embeds[0].description = `La partita del **<t:${match_timestamp}>**, giocata da **${home_name} (in casa)** contro **${away_name} (in trasferta)**, è stata annullata.`;
 				msg.embeds[0].color = 9532993;
 			}
-			else if(match.status == 'postponed') {
-				msg.embeds[0].description = `La partita del **<t:${new Date(match.date).getTime() / 1000}>**, giocata da **${match.homeName} (in casa)** contro **${match.awayName} (in trasferta)**, è stata rimandata.`;
+			else if(status_short == 'PST') { //postponed
+				msg.embeds[0].description = `La partita del **<t:${match_timestamp}>**, giocata da **${home_name} (in casa)** contro **${away_name} (in trasferta)**, è stata rimandata.`;
 				msg.embeds[0].color = 9532993;
 			}
 			console.log(msg);
