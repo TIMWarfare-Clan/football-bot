@@ -286,7 +286,7 @@ client.once('ready', async () => {
 			console.log(matchy);
 			if(new Date(matchy.data_partita) >= new Date() || to_del.some(e => e.id == matchy.partita_id)) continue; //if not yet started OR has already finished (is in to_delete array) skip
 			await sleep(6000); //to avoid getting rate-limited (max 10/min) //not needed anymore, we already get everything at line 183
-			match = (await ask_api('/fixtures?id='+matchy.partita_id)).response;
+			match = (await ask_api('/fixtures?id='+matchy.partita_id)).data.response[0];
 			//match = matches.filter(e => e.id == matchy.partita_id)[0];
 			//match = require('./a.js').a().data.data.filter(e => e.id == matchy.partita_id)[0];
 			console.log(match);
