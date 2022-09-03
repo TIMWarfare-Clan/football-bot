@@ -27,6 +27,7 @@ const default_values = {
 }
 var id_channel = '964875578127810601';
 const see_money_command = "`!money`";
+var can_update = true;
 
 const client = new Client({
 	intents: ["GUILDS", "GUILD_MESSAGES"]
@@ -170,6 +171,7 @@ client.once('ready', async () => {
 
 	scheduler.scheduleJob({second: 0, minute: 0, hour: 6}, async ()=>{
 		to_delete();
+		can_update = false;
 		console.log("start sending matches");
 		league_ids = (await db.collection('config').doc('leagues').get()).data().ids; //DONE: //TODO: use league ids and get last league id (should be league.current_season, use https://football.elenasport.io/v2/leagues/league_id?expand=current_season)
 		array_ids = [];
@@ -267,11 +269,16 @@ client.once('ready', async () => {
 				}
 			db.collection('messages').doc('messages').set({array_ids: array_ids});
 			console.log("finished sending matches' messages for "+league_id);
+			can_update = true;
 			}catch(e){console.log(e)}
 		}
 	});
 
 	scheduler.scheduleJob("0 */1 * * *", async ()=>{
+		if(can_update == false) {
+			console.log("can't update matches, sending matches in progress");
+			return;
+		}
 		console.log("start updating matches");
 		ids = (await db.collection('messages').doc('messages').get()).data().array_ids;
 		to_del = (await db.collection('messages').doc('to_delete').get()).data().array_ids;
