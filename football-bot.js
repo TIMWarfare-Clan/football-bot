@@ -135,6 +135,41 @@ async function to_delete() {
 	console.log("finito delete");
 }
 
+function determine_match_state(current_state) {
+	not_started_states = [
+		'NS',
+		'TBD'
+	];
+	in_progress_states = [
+		'1H',
+		'HT',
+		'2H',
+		'ET',
+		'P',
+		'BT'
+	];
+	finished_states = [
+		'FT',
+		'AET',
+		'PEN',
+	];
+	cancelled_states = [
+		'INT',
+		'CANC',
+		'ABD'
+	];
+	postponed_states = [
+		'SUSP',
+		'PST'
+	];
+
+	     if(not_started_states.includes(current_state)) return 'not_started';
+	else if(in_progress_states.includes(current_state)) return 'in_progress';
+	else if(finished_states.   includes(current_state)) return 'finished';
+	else if(cancelled_states.  includes(current_state)) return 'cancelled';
+	else if(postponed_states.  includes(current_state)) return 'postponed';
+}
+
 client.once('ready', async () => {
 	// backup whole db
 	collections = await db.listCollections();
@@ -297,10 +332,9 @@ client.once('ready', async () => {
 			//match = matches.filter(e => e.id == matchy.partita_id)[0];
 			//match = require('./a.js').a().data.data.filter(e => e.id == matchy.partita_id)[0];
 			console.log(match);
-			if(match.fixture.status.short == 'NS') continue; //shouldn't ever run, but just to be sure //NS = not started
 
 			// so I can switch api quickier
-			match_timestamp = match.timestamp;
+			match_timestamp = match.fixture.timestamp;
 			match_id 	= match.fixture.id;
 			league_name 	= match.league.name;
 			home_sum 	= match.goals.home;
@@ -308,6 +342,17 @@ client.once('ready', async () => {
 			home_name 	= match.teams.home.name;
 			away_name 	= match.teams.away.name;
 			status_short 	= match.fixture.status.short;
+
+			console.log(
+				match_timestamp,
+				match_id,
+				league_name,
+				home_sum,
+				away_sum,
+				home_name,
+				away_name,
+				status_short
+			)
 
 			msg = {
 				embeds: [
@@ -333,7 +378,8 @@ client.once('ready', async () => {
 					}
 				],
 			}
-			if(status_short == 'LIVE') { //in progress
+			if(determine_match_state(status_short) == 'not_started') continue; //shouldn't ever run, but just to be sure //NS = not started
+			else if(determine_match_state(status_short) == 'in_progress') { //in progress
 				msg.embeds[0].description = `La partita del **<t:${match_timestamp}>**, giocata da **${home_name} (in casa)** contro **${away_name} (in trasferta)**, è in corso.`
 				msg.embeds[0].color = 9532993;
 				msg.embeds[0].fields.splice(0, 0, {
@@ -341,7 +387,7 @@ client.once('ready', async () => {
 					"value": `*${home_name}*: ${home_sum}\n*${away_name}*: ${away_sum}`
 				});
 			}
-			else if(status_short == 'FT') { //finished
+			else if(determine_match_state(status_short) == 'finished') { //finished
 				msg.embeds[0].description = `La partita del **<t:${match_timestamp}>**, giocata da **${home_name} (in casa)** contro **${away_name} (in trasferta)**, è finita.\nLe ricompense delle scommesse sono state accreditate ed è stata inviata una notifica nei messaggi privati a chi a scommesso.`;
 				msg.embeds[0].color = 9532993;
 				msg.embeds[0].fields.splice(0, 0,
@@ -369,11 +415,11 @@ client.once('ready', async () => {
 				}catch(e){console.log(e)}
 				console.log(`${match_id} removed from messages and added to to_delete`);
 			}
-			else if(status_short == 'CANC') { //cancelled
+			else if(determine_match_state(status_short) == 'cancelled') { //cancelled
 				msg.embeds[0].description = `La partita del **<t:${match_timestamp}>**, giocata da **${home_name} (in casa)** contro **${away_name} (in trasferta)**, è stata annullata.`;
 				msg.embeds[0].color = 9532993;
 			}
-			else if(status_short == 'PST') { //postponed
+			else if(determine_match_state(status_short) == 'postponed') { //postponed
 				msg.embeds[0].description = `La partita del **<t:${match_timestamp}>**, giocata da **${home_name} (in casa)** contro **${away_name} (in trasferta)**, è stata rimandata.`;
 				msg.embeds[0].color = 9532993;
 			}
@@ -458,7 +504,7 @@ client.on('interactionCreate', async interaction => {
 							}else if(confirm_message.content.toLowerCase() == 'annulla') {
 								confirm_message.delete().then(msg => {console.log(`Deleted confirm_message 'annulla' from ${msg.author.username} (id:${msg.author.id}) at ${new Date()}`)}).catch(console.error);
 								interaction.followUp({content: "Annullato", ephemeral: eph});
-								console.log(bb.id_partita+" canceled");
+								console.log(bb.id_partita+" cancelled");
 							}
 						});
 						collector.on('end', (collected, reason) => {
