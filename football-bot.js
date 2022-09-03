@@ -105,12 +105,12 @@ async function update_money(match_id, home_sum, away_sum) { //update money
 						//money: admin.firestore.FieldValue.increment(aumento)
 					});
 				}
-				(await client.users.fetch(user_doc.id)).send(`Hai vinto la scommessa con valore ${bet.bet_value} della partita con ID \`${bet.id_partita}\` del <t:${Math.floor(new Date(bet.timestamp).getTime() / 1000)}>, ti sono stati aggiunti ${aumento} ${currency_name}.`);
+				(await client.users.fetch(user_doc.id)).send(`Hai vinto la scommessa del <t:${Math.floor(new Date(bet.timestamp).getTime() / 1000)}> con valore ${bet.bet_value} sulla partita con ID \`${bet.id_partita}\`, ti sono stati aggiunti ${aumento} ${currency_name}.`);
 			} else {
 				coll.doc(user_doc.id).update({
 					lost:  admin.firestore.FieldValue.increment(1)
 				});
-				(await client.users.fetch(user_doc.id)).send(`Hai perso la scommessa con valore ${bet.bet_value} della partita con ID \`${bet.id_partita}\` del <t:${Math.floor(new Date(bet.timestamp).getTime() / 1000)}>, non ti sono stati aggiunti credit. Riprova (o forse no, è meglio non giocare d'azzardo)`);
+				(await client.users.fetch(user_doc.id)).send(`Hai perso la scommessa del <t:${Math.floor(new Date(bet.timestamp).getTime() / 1000)}> con valore ${bet.bet_value} della partita con ID \`${bet.id_partita}\`, non ti sono stati aggiunti credit. Riprova (o forse no, è meglio non giocare d'azzardo)`);
 			}
 		}
 	}
@@ -504,7 +504,7 @@ client.on('interactionCreate', async interaction => {
 						collector.on('collect', async confirm_message => {
 							if(confirm_message.content.toLowerCase() == 'giusto') {
 								confirm_message.delete().then(msg => {console.log(`Deleted confirm_message 'giusto' from ${msg.author.username} (id:${msg.author.id}) at ${new Date()}`)}).catch(console.error);
-								await doc.set({yes:0}, {merge: true})
+								await doc.set({yes:0}, {merge: true}) //if you /bet more than once in a single time without using 'giusto' it will confirm three times, but it's fine cause the array gets overwritten each "Confermato"
 								doc.update({
 									bet_log: admin.firestore.FieldValue.arrayUnion(bb),
 									//money:   admin.firestore.FieldValue.increment(-bb.bet_amount),
