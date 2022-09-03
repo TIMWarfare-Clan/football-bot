@@ -224,11 +224,17 @@ client.once('ready', async () => {
 			today = new Date();
 			today_yyyymmdd = today.toISOString().split('T')[0];
 			console.log(today);
-			resp = (await ask_api('/fixtures?league='+league_id+'&season='+today.getUTCFullYear()+'&from='+today_yyyymmdd+'&to='+today_yyyymmdd)).data.response;
+
+			axios_response = (await ask_api('/fixtures?league='+league_id+'&season='+today.getUTCFullYear()+'&from='+today_yyyymmdd+'&to='+today_yyyymmdd));
+			if(axios_response.status != 200) {
+				console.log(axios_response.status+": "+axios_response.statusText, "resquest:", axios_response.request);
+				continue;
+			}
 
 			//resp = await ask_api('/v2/fixtures?from=2022-09-03&to=2022-09-04');
 			//resp = await ask_api('/v2/upcoming');
 			//resp = require('./a.js').a();
+			resp = axios_response.data.response;
 			console.log(resp);
 
 			cc = (await client.channels.fetch(id_channel));
@@ -331,14 +337,13 @@ client.once('ready', async () => {
 			await sleep(6000); //to avoid getting rate-limited (max 10/min)
 
 			axios_response = (await ask_api('/fixtures?id='+matchy.partita_id));
-			//match = matches.filter(e => e.id == matchy.partita_id)[0];
-			//match = require('./a.js').a().data.data.filter(e => e.id == matchy.partita_id)[0];
-
 			if(axios_response.status != 200) {
 				console.log(axios_response.status+": "+axios_response.statusText, "resquest:", axios_response.request);
 				continue;
 			}
 
+			//match = matches.filter(e => e.id == matchy.partita_id)[0];
+			//match = require('./a.js').a().data.data.filter(e => e.id == matchy.partita_id)[0];
 			match = axios_response.data.response[0];
 			console.log(match);
 
