@@ -326,11 +326,20 @@ client.once('ready', async () => {
 		//}
 		for(const matchy of ids) {
 			console.log(matchy);
-			if(new Date(matchy.data_partita) >= new Date() || to_del.some(e => e.id == matchy.partita_id)) continue; //if not yet started OR has already finished (is in to_delete array) skip
-			await sleep(6000); //to avoid getting rate-limited (max 10/min) //not needed anymore, we already get everything at line 183
-			match = (await ask_api('/fixtures?id='+matchy.partita_id)).data.response[0];
+			if(new Date(matchy.data_partita) >= new Date() || to_del.some(e => e.id == matchy.partita_id))
+				continue; //if not yet started OR has already finished (is in to_delete array) skip
+			await sleep(6000); //to avoid getting rate-limited (max 10/min)
+
+			axios_response = (await ask_api('/fixtures?id='+matchy.partita_id));
 			//match = matches.filter(e => e.id == matchy.partita_id)[0];
 			//match = require('./a.js').a().data.data.filter(e => e.id == matchy.partita_id)[0];
+
+			if(axios_response.status != 200) {
+				console.log(axios_response.status+": "+axios_response.statusText, "resquest:", axios_response.request);
+				continue;
+			}
+
+			match = axios_response.data.response[0];
 			console.log(match);
 
 			// so I can switch api quickier
