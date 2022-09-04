@@ -32,6 +32,6 @@ const rest = new REST({ version: '9' }).setToken(t);
 //	.catch(console.error);
 
 // for global commands
-rest.delete(Routes.applicationCommand(cId, '960676620086149130')) //command id, see https://discordjs.guide/creating-your-bot/deleting-commands.html#deleting-specific-commands
+rest.delete(Routes.applicationCommand(cId, '1015997360976973924')) //command id, see https://discordjs.guide/creating-your-bot/deleting-commands.html#deleting-specific-commands
 	.then(() => console.log('Successfully deleted application command'))
 	.catch(console.error);
