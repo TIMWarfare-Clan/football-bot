@@ -122,7 +122,7 @@ async function to_delete() {
 		doc = await db.collection('messages').doc('to_delete');
 		ids = (await doc.get()).data().array_ids;
 		id_channel = (await db.collection('config').doc('channel').get()).data().id;
-		console.log(ids)
+		console.log('delete_ids:'+ids)
 		for(const t of ids) {
 			msg_id = t.message_id;
 			cc = (await client.channels.fetch(id_channel));
