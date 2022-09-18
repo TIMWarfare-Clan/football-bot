@@ -16,6 +16,8 @@ const scheduler = require('node-schedule');
 const uu = require('unb-api');
 const unb = new uu.Client(endec.decode(process.env.tok_unb));
 var axios = require("axios").default;
+const creator_id = '295941261141999617'; // change it to your id
+const bookmaker_id = '6'; // 6 = Bwin
 
 //global variables
 //const currency_name = "credit (1 credit = 1 <:shadowsdesign:893222216966225960>)";
@@ -82,37 +84,20 @@ async function update_money(match_id, home_sum, away_sum) { //update money
 		console.log(b);
 		for(bet of b) {
 			if(bet.bet_value.includes(r)) {
-				var aumento = 1;
 				//TODO: not use firestore for guild id (that way other guilds can also be supported)
-				if(bet.bet_value.length == 2) {
-					aumento = Math.floor(bet.bet_amount*1.5);
-					await unb.editUserBalance(
-						(await db.collection('config').doc('guild_unb').get()).data().timw, user_doc.id,
-						{
-							cash: aumento,
-							bank: 0
-						},
-						`bet id:${bet.id_partita} vinta, aggiunti ${aumento} unb currency`
-					)
-					coll.doc(user_doc.id).update({
-						won:   admin.firestore.FieldValue.increment(1)//,
-						//money: admin.firestore.FieldValue.increment(aumento)
-					});
-				} else {
-					aumento = Math.floor(bet.bet_amount*2);
-					await unb.editUserBalance(
-						(await db.collection('config').doc('guild_unb').get()).data().timw, user_doc.id,
-						{
-							cash: aumento,
-							bank: 0
-						},
-						`bet id:${bet.id_partita} vinta, aggiunti ${aumento} unb currency`
-					)
-					coll.doc(user_doc.id).update({
-						won:   admin.firestore.FieldValue.increment(1)//,
-						//money: admin.firestore.FieldValue.increment(aumento)
-					});
-				}
+				const aumento = Math.floor(bet.bet_amount * bet.multiplier);
+				await unb.editUserBalance(
+					(await db.collection('config').doc('guild_unb').get()).data().timw, user_doc.id,
+					{
+						cash: aumento,
+						bank: 0
+					},
+					`bet id:${bet.id_partita} vinta, aggiunti ${aumento} unb currency`
+				)
+				coll.doc(user_doc.id).update({
+					won:   admin.firestore.FieldValue.increment(1)//,
+					//money: admin.firestore.FieldValue.increment(aumento)
+				});
 				(await client.users.fetch(user_doc.id)).send(`Hai vinto la scommessa del <t:${Math.floor(new Date(bet.timestamp).getTime() / 1000)}> con valore ${bet.bet_value} sulla partita con ID \`${bet.id_partita}\`, ti sono stati aggiunti ${aumento} ${currency_name}.`);
 			} else {
 				coll.doc(user_doc.id).update({
@@ -460,14 +445,15 @@ client.on('messageCreate', async (message) => {
 
 client.on('interactionCreate', async interaction => {
 	if (!interaction.isCommand()) return;
-	console.log(interaction);
+	//console.log(interaction);
 	if(interaction.commandName === 'bet') {
 		eph = true;
 		bb = {
-			bet_value:  interaction.options.getString('value'),
-			bet_amount: interaction.options.getInteger('bet'),
-			id_partita: interaction.options.getString('id'),
-			timestamp:  new Date().toISOString()
+			bet_value:	interaction.options.getString('value'),
+			bet_amount:	interaction.options.getInteger('bet'),
+			id_partita:	interaction.options.getString('id'),
+			timestamp:	new Date().toISOString(),
+			multiplier:	1.0
 		}
 		id = (await db.collection('messages').doc('messages').get()).data().array_ids.find(e => e.partita_id == bb.id_partita);
 		console.log(id);
@@ -507,6 +493,41 @@ client.on('interactionCreate', async interaction => {
 							if(confirm_message.content.toLowerCase() == 'giusto') {
 								confirm_message.delete().then(msg => {console.log(`Deleted confirm_message 'giusto' from ${msg.author.username} (id:${msg.author.id}) at ${new Date()}`)}).catch(console.error);
 								await doc.set({yes:0}, {merge: true}) //if you /bet more than once in a single time without using 'giusto' it will confirm three times, but it's fine cause the array gets overwritten each "Confermato"
+								axios_response = (await ask_api('/odds?fixture='+ bb.id_partita +'&bookmaker='+ bookmaker_id));
+								if(axios_response == null){
+									//interaction.followUp({content: "Failed to get odds. STATUS CODE: "+ axios_response.status +"\n\nManda un messaggio a <@"+ creator_id +">.", ephemeral: eph});
+									interaction.followUp({content: "Errore nella ricezione delle quote. STATUS CODE: "+ axios_response.status +"\n\nManda un messaggio a <@"+ creator_id +">.", ephemeral: eph});
+								}
+
+								var odd_id;
+								switch(bb.bet_value) {
+									case "1":
+										odd_name = "Home";
+										odd_id = 1;
+										break;
+									case "2":
+										odd_name = "Away";
+										odd_id = 1;
+										break;
+									case "X":
+										odd_name = "Draw";
+										odd_id = 1;
+										break;
+									case "1X":
+										odd_name = "Home/Draw";
+										odd_id = 12;
+										break;
+									case "X2":
+										odd_name = "Draw/Away";
+										odd_id = 12;
+										break;
+									case "12":
+										odd_name = "Home/Away";
+										odd_id = 12;
+										break;
+								}
+								bb.multiplier = parseFloat(axios_response.data.response[0].bookmakers[0].bets.find(e => e.id == odd_id).values.find(e => e.value == odd_name).odd);
+
 								doc.update({
 									bet_log: admin.firestore.FieldValue.arrayUnion(bb),
 									//money:   admin.firestore.FieldValue.increment(-bb.bet_amount),
