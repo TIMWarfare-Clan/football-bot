@@ -49,7 +49,15 @@ async function ask_api(endpoint) {
 	};
 	//console.log(options);
 
-	return await axios.request(options)
+	response = await axios.request(options);
+
+	console.log(response.status+": "+response.statusText, "resquest:", response.request);
+	if(response.status != 200) {
+		console.log("data:", response.data);
+		response = null;
+	}
+
+	return response;
 }
 /*
 function nextweek(today){ //from https://stackoverflow.com/a/1025723/12206923
@@ -204,7 +212,7 @@ client.once('ready', async () => {
 	//console.log(b);
 	//(await client.users.fetch('295941261141999617')).send(currency_name);
 
-	scheduler.scheduleJob({second: 0, minute: 0, hour: 6}, async ()=>{
+	scheduler.scheduleJob({second: 0, minute: 5, hour: 4}, async ()=>{
 		to_delete();
 		can_update = false;
 		console.log("start sending matches");
@@ -226,10 +234,7 @@ client.once('ready', async () => {
 			console.log(today);
 
 			axios_response = (await ask_api('/fixtures?league='+league_id+'&season='+today.getUTCFullYear()+'&from='+today_yyyymmdd+'&to='+today_yyyymmdd));
-			if(axios_response.status != 200) {
-				console.log(axios_response.status+": "+axios_response.statusText, "resquest:", axios_response.request);
-				continue;
-			}
+			if(axios_response == null) continue;
 
 			//resp = await ask_api('/v2/fixtures?from=2022-09-03&to=2022-09-04');
 			//resp = await ask_api('/v2/upcoming');
@@ -308,9 +313,9 @@ client.once('ready', async () => {
 					});
 					console.log(array_ids,array_ids.length);
 				}
-			db.collection('messages').doc('messages').set({array_ids: array_ids});
-			console.log("finished sending matches' messages for "+league_id);
-			can_update = true;
+				db.collection('messages').doc('messages').set({array_ids: array_ids});
+				console.log("finished sending matches' messages for "+league_id);
+				can_update = true;
 			}catch(e){console.log(e)}
 		}
 	});
@@ -337,10 +342,7 @@ client.once('ready', async () => {
 			await sleep(6000); //to avoid getting rate-limited (max 10/min)
 
 			axios_response = (await ask_api('/fixtures?id='+matchy.partita_id));
-			if(axios_response.status != 200) {
-				console.log(axios_response.status+": "+axios_response.statusText, "resquest:", axios_response.request);
-				continue;
-			}
+			if(axios_response == null) continue;
 
 			//match = matches.filter(e => e.id == matchy.partita_id)[0];
 			//match = require('./a.js').a().data.data.filter(e => e.id == matchy.partita_id)[0];
