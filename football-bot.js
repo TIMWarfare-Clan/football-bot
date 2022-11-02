@@ -403,7 +403,7 @@ client.once('ready', async () => {
 						"inline": true
 					}
 				);
-				update_money(match_id, home_sum, home_sum);
+				update_money(match_id, home_sum, away_sum);
 				ards = (await db.collection('messages').doc('messages').get()).data().array_ids;
 				try {
 					ar  = ards.filter(e => e.partita_id != match_id);
